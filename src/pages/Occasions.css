@@ -1,0 +1,260 @@
+/* Page Container Styles (Shared across all pages) */
+.page-container {
+    min-height: calc(100vh - var(--header-height));
+    padding: var(--space-2xl);
+    background: var(--bg-main);
+}
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: var(--space-2xl);
+    animation: slideDown var(--transition-base) ease-out;
+}
+
+.page-header-content {
+    flex: 1;
+}
+
+.page-title-big {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    margin-bottom: var(--space-sm);
+}
+
+.page-description {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Page Filters */
+.page-filters {
+    display: flex;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+    animation: slideDown var(--transition-base) ease-out 0.1s backwards;
+}
+
+.search-input {
+    flex: 1;
+    max-width: 400px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.filter-btn {
+    padding: 0.625rem 1.25rem;
+    border: 2px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    white-space: nowrap;
+}
+
+.filter-btn:hover {
+    border-color: var(--primary-light);
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.filter-btn.active {
+    border-color: var(--primary);
+    background: var(--primary-gradient);
+    color: var(--text-white);
+}
+
+/* Occasions Grid */
+.occasions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-xl);
+    animation: slideUp var(--transition-base) ease-out 0.2s backwards;
+}
+
+.occasion-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    border: 2px solid transparent;
+    transition: all var(--transition-base);
+}
+
+.occasion-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-light);
+}
+
+.occasion-card.inactive {
+    opacity: 0.6;
+}
+
+.occasion-image {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+}
+
+.occasion-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+}
+
+.occasion-card:hover .occasion-image img {
+    transform: scale(1.1);
+}
+
+.inactive-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-white);
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.occasion-content {
+    padding: var(--space-xl);
+}
+
+.occasion-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    margin-bottom: var(--space-lg);
+}
+
+.occasion-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.occasion-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-hover);
+    border-radius: var(--radius-md);
+}
+
+.toggle-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.occasion-buttons {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.occasion-buttons .btn {
+    flex: 1;
+}
+
+/* Empty State */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: var(--space-3xl);
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    border: 2px dashed var(--border);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: var(--space-lg);
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.empty-state p {
+    color: var(--text-tertiary);
+    margin: 0;
+}
+
+/* Form Helpers */
+.form-help {
+    font-size: 0.812rem;
+    color: var(--text-tertiary);
+    margin: 0;
+    margin-top: 2px;
+}
+
+.toggle-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md);
+    background: var(--bg-hover);
+    border-radius: var(--radius-md);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .occasions-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .page-container {
+        padding: var(--space-lg);
+    }
+
+    .page-header {
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .page-header .btn {
+        width: 100%;
+    }
+
+    .page-filters {
+        flex-direction: column;
+    }
+
+    .search-input {
+        max-width: 100%;
+    }
+
+    .filter-buttons {
+        overflow-x: auto;
+    }
+
+    .occasions-grid {
+        grid-template-columns: 1fr;
+    }
+}

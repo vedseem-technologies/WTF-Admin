@@ -1,0 +1,98 @@
+/* Image Upload Styles */
+.image-upload {
+    margin-bottom: var(--space-lg);
+}
+
+.image-upload-container {
+    margin-bottom: var(--space-md);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all var(--transition-base);
+}
+
+.image-upload-container:hover {
+    border-color: var(--primary);
+}
+
+.image-preview {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    background: var(--bg-hover);
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-remove {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--danger);
+    color: var(--text-white);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all var(--transition-base);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.image-remove:hover {
+    transform: scale(1.1) rotate(90deg);
+}
+
+.image-placeholder {
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    background: var(--bg-hover);
+    color: var(--text-tertiary);
+}
+
+.placeholder-icon {
+    font-size: 3rem;
+    opacity: 0.5;
+}
+
+.placeholder-text {
+    font-size: 0.937rem;
+    font-weight: 500;
+}
+
+.image-upload-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.file-upload-btn {
+    display: block;
+    cursor: pointer;
+    margin: 0;
+}
+
+.file-upload-btn:hover .btn {
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+
+    .image-preview,
+    .image-placeholder {
+        height: 150px;
+    }
+}

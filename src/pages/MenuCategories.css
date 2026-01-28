@@ -1,0 +1,117 @@
+/* Menu Categories List */
+.menu-categories-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    animation: slideUp var(--transition-base) ease-out;
+}
+
+.menu-category-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    padding: var(--space-xl);
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 2px solid transparent;
+    transition: all var(--transition-base);
+}
+
+.menu-category-item:hover {
+    transform: translateX(4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-light);
+}
+
+.category-order {
+    width: 48px;
+    height: 48px;
+    background: var(--primary-gradient);
+    color: var(--text-white);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.category-icon {
+    width: 56px;
+    height: 56px;
+    background: var(--primary-light);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.category-info {
+    flex: 1;
+}
+
+.category-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    margin-bottom: 4px;
+}
+
+.category-meta {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    margin: 0;
+}
+
+.category-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.order-buttons {
+    display: flex;
+    gap: 4px;
+    padding-right: var(--space-sm);
+    border-right: 1px solid var(--border);
+    margin-right: var(--space-sm);
+}
+
+.order-buttons .btn {
+    min-width: 40px;
+}
+
+.order-buttons .btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .menu-category-item {
+        flex-wrap: wrap;
+        gap: var(--space-md);
+    }
+
+    .category-info {
+        flex-basis: 100%;
+        order: 3;
+    }
+
+    .category-controls {
+        flex-basis: 100%;
+        order: 4;
+        justify-content: flex-end;
+    }
+
+    .order-buttons {
+        border-right: none;
+        padding-right: 0;
+        margin-right: 0;
+    }
+}
