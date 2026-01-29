@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import './Youtube.css';
 
 const Youtube = () => {
-    const { youtubeLinks, addYoutubeLink, deleteYoutubeLink } = useData();
+    const { youtubeLinks, loadingYoutubeLinks, addYoutubeLink, deleteYoutubeLink } = useData();
     const [linkInput, setLinkInput] = useState('');
 
     const handleAddLink = (e) => {
@@ -50,47 +50,51 @@ const Youtube = () => {
 
 
             <div className="table-container">
-                <table className="table youtube-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>YouTube Link</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {youtubeLinks.map((link, index) => {
-                            return (
-                                <tr key={link.id}>
-                                    <td>{index + 1}</td>
-                                    <td>
-                                        <a
-                                            href={link.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="youtube-link"
-                                        >
-                                            {link.url}
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            <button
-                                                className="btn-icon btn-delete"
-                                                onClick={() => handleDelete(link.id)}
-                                                title="Delete"
+                {loadingYoutubeLinks ? (
+                    <div className="loading-state">
+                        <h3>...loading</h3>
+                    </div>
+                ) : youtubeLinks.length > 0 ? (
+                    <table className="table youtube-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>YouTube Link</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {youtubeLinks.map((link, index) => {
+                                return (
+                                    <tr key={link._id}>
+                                        <td>{index + 1}</td>
+                                        <td>
+                                            <a
+                                                href={link.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="youtube-link"
                                             >
-                                                🗑️
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-
-                {youtubeLinks.length === 0 && (
+                                                {link.url}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <div className="action-buttons">
+                                                <button
+                                                    className="btn-icon btn-delete"
+                                                    onClick={() => handleDelete(link._id)}
+                                                    title="Delete"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                ) : (
                     <div className="empty-state">
                         <span className="empty-icon">🎥</span>
                         <h3>No YouTube links added</h3>

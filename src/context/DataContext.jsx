@@ -30,6 +30,7 @@ export const DataProvider = ({ children }) => {
     const [loadingOccasions, setLoadingOccasions] = useState(true);
     const [loadingServices, setLoadingServices] = useState(true);
     const [loadingCategories, setLoadingCategories] = useState(true);
+    const [loadingYoutubeLinks, setLoadingYoutubeLinks] = useState(true);
 
     // Fetch Blogs
     useEffect(() => {
@@ -95,6 +96,21 @@ export const DataProvider = ({ children }) => {
         };
         fetchServices();
     }, []);
+    // Fetch YouTube Links
+    useEffect(() => {
+        const fetchYoutubeLinks = async () => {
+            try {
+                setLoadingYoutubeLinks(true);
+                const response = await axios.get('http://localhost:5000/api/youtube');
+                setYoutubeLinks(response.data);
+            } catch (error) {
+                console.error("Error fetching YouTube links:", error);
+            } finally {
+                setLoadingYoutubeLinks(false);
+            }
+        };
+        fetchYoutubeLinks();
+    }, []);
     const [occasions, setOccasions] = useState([]);
     const [services, setServices] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -103,7 +119,7 @@ export const DataProvider = ({ children }) => {
 
     const [popularItems, setPopularItems] = useState([]);
     const [rangeMenus, setRangeMenus] = useState(mockRangeMenus);
-    const [youtubeLinks, setYoutubeLinks] = useState(mockYoutubeLinks);
+    const [youtubeLinks, setYoutubeLinks] = useState([]);
 
 
 
@@ -439,15 +455,22 @@ export const DataProvider = ({ children }) => {
 
 
         youtubeLinks,
-        addYoutubeLink: (link) => {
-            const newLink = {
-                ...link,
-                id: Date.now()
-            };
-            setYoutubeLinks([...youtubeLinks, newLink]);
+        loadingYoutubeLinks,
+        addYoutubeLink: async (link) => {
+            try {
+                const response = await axios.post('http://localhost:5000/api/youtube', link);
+                setYoutubeLinks([response.data, ...youtubeLinks]);
+            } catch (error) {
+                console.error("Error adding YouTube link:", error);
+            }
         },
-        deleteYoutubeLink: (id) => {
-            setYoutubeLinks(youtubeLinks.filter(link => link.id !== id));
+        deleteYoutubeLink: async (id) => {
+            try {
+                await axios.delete(`http://localhost:5000/api/youtube/${id}`);
+                setYoutubeLinks(youtubeLinks.filter(link => link._id !== id));
+            } catch (error) {
+                console.error("Error deleting YouTube link:", error);
+            }
         },
 
 

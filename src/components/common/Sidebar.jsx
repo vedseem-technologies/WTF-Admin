@@ -38,7 +38,7 @@ const Sidebar = () => {
                 </div>
             </div>
 
-            <div className="sidebar-search-container">
+            {/* <div className="sidebar-search-container">
                 <input
                     type="text"
                     className="sidebar-search"
@@ -46,7 +46,7 @@ const Sidebar = () => {
                     value={sidebarSearch}
                     onChange={(e) => setSidebarSearch(e.target.value)}
                 />
-            </div>
+            </div> */}
 
             <nav className="sidebar-nav">
                 {menuItems.map((item) => (
