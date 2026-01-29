@@ -14,7 +14,7 @@ const MENU_CATEGORIES = [
 ];
 
 const MenuItems = ({ categoryId = null, titleOverride = null }) => {
-    const { menuItems, addMenuItem, addBulkMenuItems, updateMenuItem, deleteMenuItem, toggleMenuItemActive } = useData();
+    const { menuItems, loadingMenuItems, addMenuItem, addBulkMenuItems, updateMenuItem, deleteMenuItem, toggleMenuItemActive } = useData();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -74,7 +74,7 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
         e.preventDefault();
 
         if (editingItem) {
-            updateMenuItem(editingItem.id, formData);
+            updateMenuItem(editingItem._id, formData);
         } else {
             addMenuItem(formData);
         }
@@ -161,71 +161,80 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
             </div>
 
             <div className="table-container">
-                <table className="table menu-items-table">
-                    <thead>
-                        <tr>
-                            <th>Image</th>
-                            <th>Item Name</th>
-                            <th>Type</th>
-                            <th>Price</th>
-                            <th>Portion</th>
-                            <th>People</th>
-                            <th>Active</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredItems.map((item) => (
-                            <tr key={item.id}>
-                                <td>
-                                    <div className="item-image">
-                                        <img src={item.image} alt={item.name} />
-                                    </div>
-                                </td>
-                                <td className="font-semibold">{item.name}</td>
-                                <td>
-                                    <span className={`badge badge-${item.type === 'Veg' ? 'success' : 'danger'}`}>
-                                        {item.type}
-                                    </span>
-                                </td>
-                                <td className="font-semibold">{formatCurrency(item.price)}</td>
-                                <td>{item.portionSize}</td>
-                                <td>{item.people}</td>
-                                <td>
-                                    <Toggle
-                                        checked={item.active}
-                                        onChange={() => toggleMenuItemActive(item.id)}
-                                    />
-                                </td>
-                                <td>
-                                    <div className="action-buttons">
-                                        <button
-                                            className="btn btn-sm btn-outline"
-                                            onClick={() => handleOpenModal(item)}
-                                        >
-                                            ✏️
-                                        </button>
-                                        <button
-                                            className="btn btn-sm btn-danger"
-                                            onClick={() => handleDelete(item.id)}
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
-                                </td>
+                {loadingMenuItems ? (
+                    <div className="loading-state">
+                        <h3>...loading</h3>
+                    </div>
+                ) : filteredItems.length > 0 ? (
+                    <table className="table menu-items-table">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Item Name</th>
+                                <th>Type</th>
+                                <th>Price</th>
+                                <th>Portion</th>
+                                <th>People</th>
+                                <th>Active</th>
+                                <th>Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {filteredItems.map((item) => (
+                                <tr key={item._id}>
+                                    <td>
+                                        <div className="item-image">
+                                            <img
+                                                src={item.image}
+                                                alt={item.name}
+                                                referrerPolicy="no-referrer"
+                                                crossOrigin="anonymous"
+                                            />
+                                        </div>
+                                    </td>
+                                    <td className="font-semibold">{item.name}</td>
+                                    <td>
+                                        <span className={`badge badge-${item.type === 'Veg' ? 'success' : 'danger'}`}>
+                                            {item.type}
+                                        </span>
+                                    </td>
+                                    <td className="font-semibold">{formatCurrency(item.price)}</td>
+                                    <td>{item.portionSize}</td>
+                                    <td>{item.people}</td>
+                                    <td>
+                                        <Toggle
+                                            checked={item.active}
+                                            onChange={() => toggleMenuItemActive(item._id)}
+                                        />
+                                    </td>
+                                    <td>
+                                        <div className="action-buttons">
+                                            <button
+                                                className="btn btn-sm btn-outline"
+                                                onClick={() => handleOpenModal(item)}
+                                            >
+                                                ✏️
+                                            </button>
+                                            <button
+                                                className="btn btn-sm btn-danger"
+                                                onClick={() => handleDelete(item._id)}
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : (
+                    <div className="empty-state">
+                        <span className="empty-icon">🍕</span>
+                        <h3>No menu items found</h3>
+                        <p>Try adjusting your filters or add new items</p>
+                    </div>
+                )}
             </div>
-
-            {filteredItems.length === 0 && (
-                <div className="empty-state">
-                    <span className="empty-icon">🍕</span>
-                    <h3>No menu items found</h3>
-                    <p>Try adjusting your filters or add new items</p>
-                </div>
-            )}
 
             <Modal
                 isOpen={isModalOpen}

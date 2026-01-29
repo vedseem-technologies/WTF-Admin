@@ -11,7 +11,7 @@ const MENU_RANGES = [
 ];
 
 const RangeMenus = () => {
-    const { rangeMenus, addRangeMenu, updateRangeMenu, deleteRangeMenu } = useData();
+    const { rangeMenus, loadingRangeMenus, addRangeMenu, updateRangeMenu, deleteRangeMenu } = useData();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingMenu, setEditingMenu] = useState(null);
     const [formData, setFormData] = useState({
@@ -54,7 +54,7 @@ const RangeMenus = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (editingMenu) {
-            updateRangeMenu(editingMenu.id, formData);
+            updateRangeMenu(editingMenu._id, formData);
         } else {
             addRangeMenu(formData);
         }
@@ -97,57 +97,66 @@ const RangeMenus = () => {
             </div>
 
             <div className="table-container">
-                <table className="table range-menus-table">
-                    <thead>
-                        <tr>
-                            <th>Image</th>
-                            <th>Name</th>
-                            <th>Range</th>
-                            <th>Price</th>
-                            <th>Rating</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredMenus.map((menu) => (
-                            <tr key={menu.id}>
-                                <td>
-                                    <div className="menu-image-cell">
-                                        <img src={menu.image} alt={menu.name} />
-                                    </div>
-                                </td>
-                                <td className="menu-name">{menu.name}</td>
-                                <td>
-                                    <span className="range-badge">{menu.range}</span>
-                                </td>
-                                <td className="menu-price">₹{menu.price}</td>
-                                <td>
-                                    <span className="rating-display">{menu.rating} ⭐</span>
-                                </td>
-                                <td>
-                                    <div className="action-buttons">
-                                        <button
-                                            className="btn-icon btn-edit"
-                                            onClick={() => handleOpenModal(menu)}
-                                            title="Edit"
-                                        >
-                                            ✏️
-                                        </button>
-                                        <button
-                                            className="btn-icon btn-delete"
-                                            onClick={() => handleDelete(menu.id)}
-                                            title="Delete"
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
-                                </td>
+                {loadingRangeMenus ? (
+                    <div className="loading-state">
+                        <h3>...loading</h3>
+                    </div>
+                ) : filteredMenus.length > 0 ? (
+                    <table className="table range-menus-table">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Range</th>
+                                <th>Price</th>
+                                <th>Rating</th>
+                                <th>Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-
-                {filteredMenus.length === 0 && (
+                        </thead>
+                        <tbody>
+                            {filteredMenus.map((menu) => (
+                                <tr key={menu._id}>
+                                    <td>
+                                        <div className="menu-image-cell">
+                                            <img
+                                                src={menu.image}
+                                                alt={menu.name}
+                                                referrerPolicy="no-referrer"
+                                                crossOrigin="anonymous"
+                                            />
+                                        </div>
+                                    </td>
+                                    <td className="menu-name">{menu.name}</td>
+                                    <td>
+                                        <span className="range-badge">{menu.range}</span>
+                                    </td>
+                                    <td className="menu-price">₹{menu.price}</td>
+                                    <td>
+                                        <span className="rating-display">{menu.rating} ⭐</span>
+                                    </td>
+                                    <td>
+                                        <div className="action-buttons">
+                                            <button
+                                                className="btn-icon btn-edit"
+                                                onClick={() => handleOpenModal(menu)}
+                                                title="Edit"
+                                            >
+                                                ✏️
+                                            </button>
+                                            <button
+                                                className="btn-icon btn-delete"
+                                                onClick={() => handleDelete(menu._id)}
+                                                title="Delete"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : (
                     <div className="empty-state">
                         <span className="empty-icon">📋</span>
                         <h3>No range menus found</h3>

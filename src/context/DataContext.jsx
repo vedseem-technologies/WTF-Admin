@@ -31,6 +31,8 @@ export const DataProvider = ({ children }) => {
     const [loadingServices, setLoadingServices] = useState(true);
     const [loadingCategories, setLoadingCategories] = useState(true);
     const [loadingYoutubeLinks, setLoadingYoutubeLinks] = useState(true);
+    const [loadingRangeMenus, setLoadingRangeMenus] = useState(true);
+    const [loadingMenuItems, setLoadingMenuItems] = useState(true);
 
     // Fetch Blogs
     useEffect(() => {
@@ -110,15 +112,48 @@ export const DataProvider = ({ children }) => {
             }
         };
         fetchYoutubeLinks();
+        fetchYoutubeLinks();
+    }, []);
+
+    // Fetch Range Menus
+    useEffect(() => {
+        const fetchRangeMenus = async () => {
+            try {
+                setLoadingRangeMenus(true);
+                const response = await axios.get('http://localhost:5000/api/range-menus');
+                setRangeMenus(response.data);
+            } catch (error) {
+                console.error("Error fetching range menus:", error);
+            } finally {
+                setLoadingRangeMenus(false);
+            }
+        };
+        fetchRangeMenus();
+    }, []);
+
+    // Fetch Menu Items
+    useEffect(() => {
+        const fetchMenuItems = async () => {
+            try {
+                setLoadingMenuItems(true);
+                const response = await axios.get('http://localhost:5000/api/menu-items');
+                setMenuItems(response.data);
+            } catch (error) {
+                console.error("Error fetching menu items:", error);
+            } finally {
+                setLoadingMenuItems(false);
+            }
+        };
+        fetchMenuItems();
     }, []);
     const [occasions, setOccasions] = useState([]);
     const [services, setServices] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [menuItems, setMenuItems] = useState(mockMenuItems);
+    const [menuItems, setMenuItems] = useState([]);
     const [orders, setOrders] = useState(mockOrders);
 
     const [popularItems, setPopularItems] = useState([]);
-    const [rangeMenus, setRangeMenus] = useState(mockRangeMenus);
+    const [rangeMenus, setRangeMenus] = useState([]);
     const [youtubeLinks, setYoutubeLinks] = useState([]);
 
 
@@ -130,33 +165,60 @@ export const DataProvider = ({ children }) => {
 
 
     // MENU ITEMS CRUD
-    const addMenuItem = (menuItem) => {
-        const newMenuItem = {
-            ...menuItem,
-            id: Math.max(...menuItems.map(mi => mi.id), 0) + 1
-        };
-        setMenuItems([...menuItems, newMenuItem]);
+    const addMenuItem = async (menuItem) => {
+        try {
+            const imageUrl = await handleImageUpload(menuItem.image);
+            const itemWithUrl = { ...menuItem, image: imageUrl };
+            const response = await axios.post('http://localhost:5000/api/menu-items', itemWithUrl);
+            setMenuItems([response.data, ...menuItems]);
+        } catch (error) {
+            console.error("Error adding menu item:", error);
+        }
     };
 
-    const addBulkMenuItems = (items) => {
-        const startId = Math.max(...menuItems.map(mi => mi.id), 0) + 1;
-        const newItems = items.map((item, index) => ({
-            ...item,
-            id: startId + index
-        }));
-        setMenuItems([...menuItems, ...newItems]);
+    const addBulkMenuItems = async (items) => {
+        try {
+            // Process images if needed (assuming simple URLs for bulk for now)
+            const response = await axios.post('http://localhost:5000/api/menu-items/bulk', items);
+            setMenuItems([...response.data, ...menuItems]);
+        } catch (error) {
+            console.error("Error adding bulk menu items:", error);
+        }
     };
 
-    const updateMenuItem = (id, updatedMenuItem) => {
-        setMenuItems(menuItems.map(mi => mi.id === id ? { ...mi, ...updatedMenuItem } : mi));
+    const updateMenuItem = async (id, updatedMenuItem) => {
+        try {
+            let imageUrl = updatedMenuItem.image;
+            if (updatedMenuItem.image && updatedMenuItem.image.startsWith('data:image')) {
+                imageUrl = await handleImageUpload(updatedMenuItem.image);
+            }
+            const itemWithUrl = { ...updatedMenuItem, image: imageUrl };
+            const response = await axios.put(`http://localhost:5000/api/menu-items/${id}`, itemWithUrl);
+            setMenuItems(menuItems.map(mi => mi._id === id ? response.data : mi));
+        } catch (error) {
+            console.error("Error updating menu item:", error);
+        }
     };
 
-    const deleteMenuItem = (id) => {
-        setMenuItems(menuItems.filter(mi => mi.id !== id));
+    const deleteMenuItem = async (id) => {
+        try {
+            await axios.delete(`http://localhost:5000/api/menu-items/${id}`);
+            setMenuItems(menuItems.filter(mi => mi._id !== id));
+        } catch (error) {
+            console.error("Error deleting menu item:", error);
+        }
     };
 
-    const toggleMenuItemActive = (id) => {
-        setMenuItems(menuItems.map(mi => mi.id === id ? { ...mi, active: !mi.active } : mi));
+    const toggleMenuItemActive = async (id) => {
+        const item = menuItems.find(mi => mi._id === id);
+        if (item) {
+            try {
+                const response = await axios.put(`http://localhost:5000/api/menu-items/${id}`, { ...item, active: !item.active });
+                setMenuItems(menuItems.map(mi => mi._id === id ? response.data : mi));
+            } catch (error) {
+                console.error("Error toggling menu item status:", error);
+            }
+        }
     };
 
     // ORDERS CRUD
@@ -219,6 +281,7 @@ export const DataProvider = ({ children }) => {
         services,
         categories,
         menuItems,
+        loadingMenuItems,
         orders,
 
         // Occasions
@@ -439,18 +502,37 @@ export const DataProvider = ({ children }) => {
 
 
         rangeMenus,
-        addRangeMenu: (menu) => {
-            const newMenu = {
-                ...menu,
-                id: Date.now()
-            };
-            setRangeMenus([...rangeMenus, newMenu]);
+        loadingRangeMenus,
+        addRangeMenu: async (menu) => {
+            try {
+                const imageUrl = await handleImageUpload(menu.image);
+                const menuWithUrl = { ...menu, image: imageUrl };
+                const response = await axios.post('http://localhost:5000/api/range-menus', menuWithUrl);
+                setRangeMenus([response.data, ...rangeMenus]);
+            } catch (error) {
+                console.error("Error adding range menu:", error);
+            }
         },
-        updateRangeMenu: (id, updatedData) => {
-            setRangeMenus(rangeMenus.map(menu => menu.id === id ? { ...menu, ...updatedData } : menu));
+        updateRangeMenu: async (id, updatedData) => {
+            try {
+                let imageUrl = updatedData.image;
+                if (updatedData.image && updatedData.image.startsWith('data:image')) {
+                    imageUrl = await handleImageUpload(updatedData.image);
+                }
+                const dataWithUrl = { ...updatedData, image: imageUrl };
+                const response = await axios.put(`http://localhost:5000/api/range-menus/${id}`, dataWithUrl);
+                setRangeMenus(rangeMenus.map(m => m._id === id ? response.data : m));
+            } catch (error) {
+                console.error("Error updating range menu:", error);
+            }
         },
-        deleteRangeMenu: (id) => {
-            setRangeMenus(rangeMenus.filter(menu => menu.id !== id));
+        deleteRangeMenu: async (id) => {
+            try {
+                await axios.delete(`http://localhost:5000/api/range-menus/${id}`);
+                setRangeMenus(rangeMenus.filter(m => m._id !== id));
+            } catch (error) {
+                console.error("Error deleting range menu:", error);
+            }
         },
 
 
