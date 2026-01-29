@@ -1,15 +1,21 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useData } from '../../context/DataContext';
 import './Sidebar.css';
 
 const Sidebar = () => {
     const location = useLocation();
+    const { occasions, packages } = useData();
     const [sidebarSearch, setSidebarSearch] = useState('');
     const [isMenuSummaryOpen, setIsMenuSummaryOpen] = useState(location.pathname.startsWith('/menu/'));
+    const [isOccasionsOpen, setIsOccasionsOpen] = useState(location.pathname.startsWith('/occasions'));
+    const [expandedOccasionId, setExpandedOccasionId] = useState(null);
 
-    const menuItems = [
-        { path: '/', icon: '📊', label: 'Dashboard' },
-        { path: '/occasions', icon: '🎉', label: 'Occasions' },
+    const topItems = [
+        { path: '/', icon: '📊', label: 'Dashboard' }
+    ];
+
+    const bottomItems = [
         { path: '/services', icon: '🍽️', label: 'Services' },
         { path: '/categories', icon: '📁', label: 'Categories' },
         { path: '/menu-items', icon: '🍕', label: 'Menu Items' },
@@ -38,18 +44,8 @@ const Sidebar = () => {
                 </div>
             </div>
 
-            {/* <div className="sidebar-search-container">
-                <input
-                    type="text"
-                    className="sidebar-search"
-                    placeholder="🔍 Search..."
-                    value={sidebarSearch}
-                    onChange={(e) => setSidebarSearch(e.target.value)}
-                />
-            </div> */}
-
             <nav className="sidebar-nav">
-                {menuItems.map((item) => (
+                {topItems.map((item) => (
                     <NavLink
                         key={item.path}
                         to={item.path}
@@ -63,7 +59,77 @@ const Sidebar = () => {
                     </NavLink>
                 ))}
 
-                {/* Menu Summary Dropdown */}
+                <div className={`nav-dropdown ${location.pathname.startsWith('/occasions') ? 'active' : ''}`}>
+                    <NavLink
+                        to="/occasions"
+                        className={({ isActive }) =>
+                            isActive ? 'nav-item active' : 'nav-item'
+                        }
+                        onClick={() => setIsOccasionsOpen(!isOccasionsOpen)}
+                    >
+                        <span className="nav-icon">🎉</span>
+                        <span className="nav-label">Occasions</span>
+                        <span className={`dropdown-arrow ${isOccasionsOpen ? 'open' : ''}`}>▾</span>
+                    </NavLink>
+
+                    <div className={`dropdown-content ${isOccasionsOpen ? 'show' : ''}`}>
+
+                        {occasions.map((occasion) => {
+                            const occasionPackages = packages.filter(p => p.occasionId === occasion._id);
+                            const isExpanded = expandedOccasionId === occasion._id;
+
+                            return (
+                                <div key={occasion._id} className="sub-nav-container">
+                                    <div className="sub-nav-header">
+                                        <NavLink
+                                            to={`/occasions/${occasion._id}`}
+                                            className="sub-nav-item"
+                                        >
+                                            <span className="nav-icon">🔹</span>
+                                            <span className="nav-label">{occasion.title}</span>
+                                        </NavLink>
+                                        {occasionPackages.length > 0 && (
+                                            <span
+                                                className={`nested-package-arrow ${isExpanded ? 'open' : ''}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setExpandedOccasionId(isExpanded ? null : occasion._id);
+                                                }}
+                                            >
+                                                ▾
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {isExpanded && occasionPackages.map(pkg => (
+                                        <NavLink
+                                            key={pkg._id}
+                                            to={`/packages/${pkg._id}`}
+                                            className="nested-package-item"
+                                        >
+                                            <span className="nav-label">{pkg.packageName}</span>
+                                        </NavLink>
+                                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {bottomItems.map((item) => (
+                    <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className={({ isActive }) =>
+                            isActive ? 'nav-item active' : 'nav-item'
+                        }
+                    >
+                        <span className="nav-icon">{item.icon}</span>
+                        <span className="nav-label">{item.label}</span>
+                    </NavLink>
+                ))}
+
                 <div className={`nav-dropdown ${location.pathname.startsWith('/menu/') ? 'active' : ''}`}>
                     <div
                         className="nav-item dropdown-toggle"

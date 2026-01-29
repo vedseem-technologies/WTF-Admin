@@ -3,6 +3,9 @@ import { DataProvider } from './context/DataContext';
 import Sidebar from './components/common/Sidebar';
 import Header from './components/common/Header';
 import Dashboard from './pages/Dashboard';
+import OccasionDetail from './pages/OccasionDetail';
+import OccasionPackageDetail from './pages/OccasionPackageDetail';
+
 import Occasions from './pages/Occasions';
 import Services from './pages/Services';
 import Categories from './pages/Categories';
@@ -20,11 +23,14 @@ import OrderDetail from './pages/OrderDetail';
 import './styles/index.css';
 import './App.css';
 
+import GlobalLoader from './components/common/GlobalLoader';
+
 function App() {
   return (
     <DataProvider>
       <Router>
         <div className="app">
+          <GlobalLoader />
           <Sidebar />
           <div className="main-content">
             <Header />
@@ -32,6 +38,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/occasions" element={<Occasions />} />
+                <Route path="/occasions/:id" element={<OccasionDetail />} />
+                <Route path="/packages/:id" element={<OccasionPackageDetail />} />
                 <Route path="/services" element={<Services />} />
                 <Route path="/categories" element={<Categories />} />
                 <Route path="/menu/starter" element={<Starter />} />

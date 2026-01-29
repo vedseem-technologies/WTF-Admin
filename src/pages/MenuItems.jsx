@@ -91,8 +91,6 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
     const handleBulkAdd = (e) => {
         e.preventDefault();
 
-        // Parse CSV-like bulk data (simple implementation)
-        // Format: Name, Category, Type, Price, PortionSize
         const lines = bulkData.trim().split('\n');
         const items = lines.map(line => {
             const [name, catId, type, price, portionSize] = line.split(',').map(s => s.trim());
@@ -284,18 +282,7 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                             </select>
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Price (₹) *</label>
-                            <input
-                                type="number"
-                                className="form-control"
-                                placeholder="e.g., 180"
-                                value={formData.price}
-                                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                                required
-                                min="0"
-                            />
-                        </div>
+
                     </div>
 
                     <div className="form-row">

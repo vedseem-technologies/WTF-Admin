@@ -33,13 +33,15 @@ export const DataProvider = ({ children }) => {
     const [loadingYoutubeLinks, setLoadingYoutubeLinks] = useState(true);
     const [loadingRangeMenus, setLoadingRangeMenus] = useState(true);
     const [loadingMenuItems, setLoadingMenuItems] = useState(true);
+    const [loadingPackages, setLoadingPackages] = useState(true);
+    const [progress, setProgress] = useState(0);
 
     // Fetch Blogs
     useEffect(() => {
         const fetchBlogs = async () => {
             try {
                 setLoadingBlogs(true);
-                const response = await axios.get('http://localhost:5000/api/blogs/getblogs');
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/blogs/getblogs`);
                 setBlogs(response.data);
             } catch (error) {
                 console.error("Error fetching blogs:", error);
@@ -51,12 +53,11 @@ export const DataProvider = ({ children }) => {
         fetchBlogs();
     }, []);
 
-    // Fetch Popular Items
     useEffect(() => {
         const fetchPopularItems = async () => {
             try {
                 setLoadingPopularItems(true);
-                const response = await axios.get('http://localhost:5000/api/food');
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/food`);
                 setPopularItems(response.data);
             } catch (error) {
                 console.error("Error fetching popular items:", error);
@@ -67,12 +68,11 @@ export const DataProvider = ({ children }) => {
         fetchPopularItems();
     }, []);
 
-    // Fetch Occasions
     useEffect(() => {
         const fetchOccasions = async () => {
             try {
                 setLoadingOccasions(true);
-                const response = await axios.get('http://localhost:5000/api/occasions');
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/occasions`);
                 setOccasions(response.data);
             } catch (error) {
                 console.error("Error fetching occasions:", error);
@@ -83,12 +83,11 @@ export const DataProvider = ({ children }) => {
         fetchOccasions();
     }, []);
 
-    // Fetch Services
     useEffect(() => {
         const fetchServices = async () => {
             try {
                 setLoadingServices(true);
-                const response = await axios.get('http://localhost:5000/api/services');
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/services`);
                 setServices(response.data);
             } catch (error) {
                 console.error("Error fetching services:", error);
@@ -98,12 +97,12 @@ export const DataProvider = ({ children }) => {
         };
         fetchServices();
     }, []);
-    // Fetch YouTube Links
+
     useEffect(() => {
         const fetchYoutubeLinks = async () => {
             try {
                 setLoadingYoutubeLinks(true);
-                const response = await axios.get('http://localhost:5000/api/youtube');
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/youtube`);
                 setYoutubeLinks(response.data);
             } catch (error) {
                 console.error("Error fetching YouTube links:", error);
@@ -115,12 +114,11 @@ export const DataProvider = ({ children }) => {
         fetchYoutubeLinks();
     }, []);
 
-    // Fetch Range Menus
     useEffect(() => {
         const fetchRangeMenus = async () => {
             try {
                 setLoadingRangeMenus(true);
-                const response = await axios.get('http://localhost:5000/api/range-menus');
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/range-menus`);
                 setRangeMenus(response.data);
             } catch (error) {
                 console.error("Error fetching range menus:", error);
@@ -131,20 +129,36 @@ export const DataProvider = ({ children }) => {
         fetchRangeMenus();
     }, []);
 
-    // Fetch Menu Items
     useEffect(() => {
         const fetchMenuItems = async () => {
             try {
+                setProgress(30);
                 setLoadingMenuItems(true);
-                const response = await axios.get('http://localhost:5000/api/menu-items');
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/menu-items`);
                 setMenuItems(response.data);
+                setProgress(100);
             } catch (error) {
-                console.error("Error fetching menu items:", error);
+                setProgress(100);
             } finally {
                 setLoadingMenuItems(false);
             }
         };
         fetchMenuItems();
+    }, []);
+
+    useEffect(() => {
+        const fetchPackages = async () => {
+            try {
+                setLoadingPackages(true);
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/packages`);
+                setPackages(response.data);
+            } catch (error) {
+                console.error("Error fetching packages:", error);
+            } finally {
+                setLoadingPackages(false);
+            }
+        };
+        fetchPackages();
     }, []);
     const [occasions, setOccasions] = useState([]);
     const [services, setServices] = useState([]);
@@ -155,21 +169,16 @@ export const DataProvider = ({ children }) => {
     const [popularItems, setPopularItems] = useState([]);
     const [rangeMenus, setRangeMenus] = useState([]);
     const [youtubeLinks, setYoutubeLinks] = useState([]);
+    const [packages, setPackages] = useState([]);
 
 
 
 
-
-
-
-
-
-    // MENU ITEMS CRUD
     const addMenuItem = async (menuItem) => {
         try {
             const imageUrl = await handleImageUpload(menuItem.image);
             const itemWithUrl = { ...menuItem, image: imageUrl };
-            const response = await axios.post('http://localhost:5000/api/menu-items', itemWithUrl);
+            const response = await axios.post(`${import.meta.env.Vite_Backend_Url}/api/menu-items`, itemWithUrl);
             setMenuItems([response.data, ...menuItems]);
         } catch (error) {
             console.error("Error adding menu item:", error);
@@ -179,7 +188,7 @@ export const DataProvider = ({ children }) => {
     const addBulkMenuItems = async (items) => {
         try {
             // Process images if needed (assuming simple URLs for bulk for now)
-            const response = await axios.post('http://localhost:5000/api/menu-items/bulk', items);
+            const response = await axios.post(`${import.meta.env.Vite_Backend_Url}/api/menu-items/bulk`, items);
             setMenuItems([...response.data, ...menuItems]);
         } catch (error) {
             console.error("Error adding bulk menu items:", error);
@@ -193,7 +202,7 @@ export const DataProvider = ({ children }) => {
                 imageUrl = await handleImageUpload(updatedMenuItem.image);
             }
             const itemWithUrl = { ...updatedMenuItem, image: imageUrl };
-            const response = await axios.put(`http://localhost:5000/api/menu-items/${id}`, itemWithUrl);
+            const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/menu-items/${id}`, itemWithUrl);
             setMenuItems(menuItems.map(mi => mi._id === id ? response.data : mi));
         } catch (error) {
             console.error("Error updating menu item:", error);
@@ -201,11 +210,15 @@ export const DataProvider = ({ children }) => {
     };
 
     const deleteMenuItem = async (id) => {
+        const originalItems = [...menuItems];
+        setMenuItems(menuItems.filter(mi => mi._id !== id));
         try {
-            await axios.delete(`http://localhost:5000/api/menu-items/${id}`);
-            setMenuItems(menuItems.filter(mi => mi._id !== id));
+            setProgress(30);
+            await axios.delete(`${import.meta.env.Vite_Backend_Url}/api/menu-items/${id}`);
+            setProgress(100);
         } catch (error) {
-            console.error("Error deleting menu item:", error);
+            setMenuItems(originalItems);
+            setProgress(100);
         }
     };
 
@@ -213,7 +226,7 @@ export const DataProvider = ({ children }) => {
         const item = menuItems.find(mi => mi._id === id);
         if (item) {
             try {
-                const response = await axios.put(`http://localhost:5000/api/menu-items/${id}`, { ...item, active: !item.active });
+                const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/menu-items/${id}`, { ...item, active: !item.active });
                 setMenuItems(menuItems.map(mi => mi._id === id ? response.data : mi));
             } catch (error) {
                 console.error("Error toggling menu item status:", error);
@@ -221,7 +234,6 @@ export const DataProvider = ({ children }) => {
         }
     };
 
-    // ORDERS CRUD
     const addOrder = (order) => {
         const newOrder = {
             ...order,
@@ -242,7 +254,6 @@ export const DataProvider = ({ children }) => {
         setOrders(orders.filter(o => o.id !== id));
     };
 
-    // HELPER FUNCTIONS
     const getMenuItemById = (id) => {
         return menuItems.find(item => item.id === id);
     };
@@ -268,7 +279,7 @@ export const DataProvider = ({ children }) => {
     const handleImageUpload = async (image) => {
         if (!image || !image.startsWith('data:image')) return image;
         try {
-            const response = await axios.post('http://localhost:5000/api/upload', { image });
+            const response = await axios.post(`${import.meta.env.Vite_Backend_Url}/api/upload`, { image });
             return response.data.url;
         } catch (error) {
             console.error("Error uploading image:", error);
@@ -285,13 +296,12 @@ export const DataProvider = ({ children }) => {
         orders,
 
         // Occasions
-        occasions,
         loadingOccasions,
         addOccasion: async (occasion) => {
             try {
                 const imageUrl = await handleImageUpload(occasion.image);
                 const occasionWithUrl = { ...occasion, image: imageUrl };
-                const response = await axios.post('http://localhost:5000/api/occasions', occasionWithUrl);
+                const response = await axios.post(`${import.meta.env.Vite_Backend_Url}/api/occasions`, occasionWithUrl);
                 setOccasions([...occasions, response.data]);
             } catch (error) {
                 console.error("Error adding occasion:", error);
@@ -304,7 +314,7 @@ export const DataProvider = ({ children }) => {
                     imageUrl = await handleImageUpload(updatedData.image);
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
-                const response = await axios.put(`http://localhost:5000/api/occasions/${id}`, dataWithUrl);
+                const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/occasions/${id}`, dataWithUrl);
                 setOccasions(occasions.map(o => o._id === id ? response.data : o));
             } catch (error) {
                 console.error("Error updating occasion:", error);
@@ -312,17 +322,20 @@ export const DataProvider = ({ children }) => {
         },
         deleteOccasion: async (id) => {
             try {
-                await axios.delete(`http://localhost:5000/api/occasions/${id}`);
+                setProgress(30);
+                await axios.delete(`${import.meta.env.Vite_Backend_Url}/api/occasions/${id}`);
                 setOccasions(occasions.filter(o => o._id !== id));
+                setProgress(100);
             } catch (error) {
                 console.error("Error deleting occasion:", error);
+                setProgress(100);
             }
         },
         toggleOccasionActive: async (id) => {
             const occasion = occasions.find(o => o._id === id);
             if (occasion) {
                 try {
-                    const response = await axios.put(`http://localhost:5000/api/occasions/${id}`, { ...occasion, active: !occasion.active });
+                    const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/occasions/${id}`, { ...occasion, active: !occasion.active });
                     setOccasions(occasions.map(o => o._id === id ? response.data : o));
                 } catch (error) {
                     console.error("Error toggling occasion status:", error);
@@ -331,13 +344,12 @@ export const DataProvider = ({ children }) => {
         },
 
         // Services
-        services,
         loadingServices,
         addService: async (service) => {
             try {
                 const imageUrl = await handleImageUpload(service.image);
                 const serviceWithUrl = { ...service, image: imageUrl };
-                const response = await axios.post('http://localhost:5000/api/services', serviceWithUrl);
+                const response = await axios.post(`${import.meta.env.Vite_Backend_Url}/api/services`, serviceWithUrl);
                 setServices([...services, response.data]);
             } catch (error) {
                 console.error("Error adding service:", error);
@@ -350,7 +362,7 @@ export const DataProvider = ({ children }) => {
                     imageUrl = await handleImageUpload(updatedData.image);
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
-                const response = await axios.put(`http://localhost:5000/api/services/${id}`, dataWithUrl);
+                const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/services/${id}`, dataWithUrl);
                 setServices(services.map(s => s._id === id ? response.data : s));
             } catch (error) {
                 console.error("Error updating service:", error);
@@ -358,7 +370,7 @@ export const DataProvider = ({ children }) => {
         },
         deleteService: async (id) => {
             try {
-                await axios.delete(`http://localhost:5000/api/services/${id}`);
+                await axios.delete(`${import.meta.env.Vite_Backend_Url}/api/services/${id}`);
                 setServices(services.filter(s => s._id !== id));
             } catch (error) {
                 console.error("Error deleting service:", error);
@@ -368,7 +380,7 @@ export const DataProvider = ({ children }) => {
             const service = services.find(s => s._id === id);
             if (service) {
                 try {
-                    const response = await axios.put(`http://localhost:5000/api/services/${id}`, { ...service, active: !service.active });
+                    const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/services/${id}`, { ...service, active: !service.active });
                     setServices(services.map(s => s._id === id ? response.data : s));
                 } catch (error) {
                     console.error("Error toggling service status:", error);
@@ -380,7 +392,7 @@ export const DataProvider = ({ children }) => {
             try {
                 const imageUrl = await handleImageUpload(category.image);
                 const categoryWithUrl = { ...category, image: imageUrl };
-                const response = await axios.post('http://localhost:5000/api/categories', categoryWithUrl);
+                const response = await axios.post(`${import.meta.env.Vite_Backend_Url}/api/categories`, categoryWithUrl);
                 setCategories([...categories, response.data]);
             } catch (error) {
                 console.error("Error adding category:", error);
@@ -393,7 +405,7 @@ export const DataProvider = ({ children }) => {
                     imageUrl = await handleImageUpload(updatedData.image);
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
-                const response = await axios.put(`http://localhost:5000/api/categories/${id}`, dataWithUrl);
+                const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/categories/${id}`, dataWithUrl);
                 setCategories(categories.map(c => c._id === id ? response.data : c));
             } catch (error) {
                 console.error("Error updating category:", error);
@@ -401,7 +413,7 @@ export const DataProvider = ({ children }) => {
         },
         deleteCategory: async (id) => {
             try {
-                await axios.delete(`http://localhost:5000/api/categories/${id}`);
+                await axios.delete(`${import.meta.env.Vite_Backend_Url}/api/categories/${id}`);
                 setCategories(categories.filter(c => c._id !== id));
             } catch (error) {
                 console.error("Error deleting category:", error);
@@ -411,7 +423,7 @@ export const DataProvider = ({ children }) => {
             const category = categories.find(c => c._id === id);
             if (category) {
                 try {
-                    const response = await axios.put(`http://localhost:5000/api/categories/${id}`, { ...category, active: !category.active });
+                    const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/categories/${id}`, { ...category, active: !category.active });
                     setCategories(categories.map(c => c._id === id ? response.data : c));
                 } catch (error) {
                     console.error("Error toggling category status:", error);
@@ -437,7 +449,7 @@ export const DataProvider = ({ children }) => {
             try {
                 const imageUrl = await handleImageUpload(blog.image);
                 const blogWithUrl = { ...blog, image: imageUrl };
-                const response = await axios.post('http://localhost:5000/api/blogs/addblog', blogWithUrl);
+                const response = await axios.post(`${import.meta.env.Vite_Backend_Url}/api/blogs/addblog`, blogWithUrl);
                 setBlogs([...blogs, response.data]);
             } catch (error) {
                 console.error("Error adding blog:", error);
@@ -450,7 +462,7 @@ export const DataProvider = ({ children }) => {
                     imageUrl = await handleImageUpload(updatedData.image);
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
-                const response = await axios.put(`http://localhost:5000/api/blogs/editblog/${id}`, dataWithUrl);
+                const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/blogs/editblog/${id}`, dataWithUrl);
                 setBlogs(blogs.map(blog => blog._id === id ? response.data : blog));
             } catch (error) {
                 console.error("Error updating blog:", error);
@@ -458,10 +470,13 @@ export const DataProvider = ({ children }) => {
         },
         deleteBlog: async (id) => {
             try {
-                await axios.delete(`http://localhost:5000/api/blogs/deleteblog/${id}`);
+                setProgress(30);
+                await axios.delete(`${import.meta.env.Vite_Backend_Url}/api/blogs/deleteblog/${id}`);
                 setBlogs(blogs.filter(blog => blog._id !== id));
+                setProgress(100);
             } catch (error) {
                 console.error("Error deleting blog:", error);
+                setProgress(100);
             }
         },
 
@@ -472,7 +487,7 @@ export const DataProvider = ({ children }) => {
             try {
                 const imageUrl = await handleImageUpload(item.image);
                 const itemWithUrl = { ...item, image: imageUrl };
-                const response = await axios.post('http://localhost:5000/api/food', itemWithUrl);
+                const response = await axios.post(`${import.meta.env.Vite_Backend_Url}/api/food`, itemWithUrl);
                 setPopularItems([...popularItems, response.data]);
             } catch (error) {
                 console.error("Error adding popular item:", error);
@@ -485,7 +500,7 @@ export const DataProvider = ({ children }) => {
                     imageUrl = await handleImageUpload(updatedData.image);
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
-                const response = await axios.put(`http://localhost:5000/api/food/${id}`, dataWithUrl);
+                const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/food/${id}`, dataWithUrl);
                 setPopularItems(popularItems.map(item => item._id === id ? response.data : item));
             } catch (error) {
                 console.error("Error updating popular item:", error);
@@ -493,10 +508,13 @@ export const DataProvider = ({ children }) => {
         },
         deletePopularItem: async (id) => {
             try {
-                await axios.delete(`http://localhost:5000/api/food/${id}`);
+                setProgress(30);
+                await axios.delete(`${import.meta.env.Vite_Backend_Url}/api/food/${id}`);
                 setPopularItems(popularItems.filter(item => item._id !== id));
+                setProgress(100);
             } catch (error) {
                 console.error("Error deleting popular item:", error);
+                setProgress(100);
             }
         },
 
@@ -507,7 +525,7 @@ export const DataProvider = ({ children }) => {
             try {
                 const imageUrl = await handleImageUpload(menu.image);
                 const menuWithUrl = { ...menu, image: imageUrl };
-                const response = await axios.post('http://localhost:5000/api/range-menus', menuWithUrl);
+                const response = await axios.post(`${import.meta.env.Vite_Backend_Url}/api/range-menus`, menuWithUrl);
                 setRangeMenus([response.data, ...rangeMenus]);
             } catch (error) {
                 console.error("Error adding range menu:", error);
@@ -520,18 +538,22 @@ export const DataProvider = ({ children }) => {
                     imageUrl = await handleImageUpload(updatedData.image);
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
-                const response = await axios.put(`http://localhost:5000/api/range-menus/${id}`, dataWithUrl);
+                const response = await axios.put(`${import.meta.env.Vite_Backend_Url}/api/range-menus/${id}`, dataWithUrl);
                 setRangeMenus(rangeMenus.map(m => m._id === id ? response.data : m));
             } catch (error) {
                 console.error("Error updating range menu:", error);
             }
         },
         deleteRangeMenu: async (id) => {
+            const originalItems = [...rangeMenus];
+            setRangeMenus(rangeMenus.filter(m => m._id !== id));
             try {
-                await axios.delete(`http://localhost:5000/api/range-menus/${id}`);
-                setRangeMenus(rangeMenus.filter(m => m._id !== id));
+                setProgress(30);
+                await axios.delete(`${import.meta.env.Vite_Backend_Url}/api/range-menus/${id}`);
+                setProgress(100);
             } catch (error) {
-                console.error("Error deleting range menu:", error);
+                setRangeMenus(originalItems);
+                setProgress(100);
             }
         },
 
@@ -540,7 +562,7 @@ export const DataProvider = ({ children }) => {
         loadingYoutubeLinks,
         addYoutubeLink: async (link) => {
             try {
-                const response = await axios.post('http://localhost:5000/api/youtube', link);
+                const response = await axios.post(`${import.meta.env.Vite_Backend_Url}/api/youtube`, link);
                 setYoutubeLinks([response.data, ...youtubeLinks]);
             } catch (error) {
                 console.error("Error adding YouTube link:", error);
@@ -548,17 +570,56 @@ export const DataProvider = ({ children }) => {
         },
         deleteYoutubeLink: async (id) => {
             try {
-                await axios.delete(`http://localhost:5000/api/youtube/${id}`);
+                setProgress(30);
+                await axios.delete(`${import.meta.env.Vite_Backend_Url}/api/youtube/${id}`);
                 setYoutubeLinks(youtubeLinks.filter(link => link._id !== id));
+                setProgress(100);
             } catch (error) {
                 console.error("Error deleting YouTube link:", error);
+                setProgress(100);
+            }
+        },
+
+        packages,
+        loadingPackages,
+        addPackage: async (pkg) => {
+            try {
+                const imageUrl = await handleImageUpload(pkg.image);
+                const pkgWithUrl = { ...pkg, image: imageUrl };
+                const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/packages`, pkgWithUrl);
+                setPackages([response.data, ...packages]);
+            } catch (error) {
+                console.error("Error adding package:", error);
+            }
+        },
+        deletePackage: async (id) => {
+            try {
+                setProgress(30);
+                await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/packages/${id}`);
+                setPackages(packages.filter(p => p._id !== id));
+                setProgress(100);
+            } catch (error) {
+                console.error("Error deleting package:", error);
+                setProgress(100);
+            }
+        },
+        updatePackage: async (id, updatedData) => {
+            try {
+                const imageUrl = await handleImageUpload(updatedData.image);
+                const pkgWithUrl = { ...updatedData, image: imageUrl };
+                const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/packages/${id}`, pkgWithUrl);
+                setPackages(packages.map(p => p._id === id ? response.data : p));
+            } catch (error) {
+                console.error("Error updating package:", error);
             }
         },
 
 
         getMenuItemById,
         getOrderById,
-        getMenuCategoryById
+        getMenuCategoryById,
+        progress,
+        setProgress
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
