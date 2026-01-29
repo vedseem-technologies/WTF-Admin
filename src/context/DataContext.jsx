@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import {
     mockOccasions,
     mockServices,
@@ -22,71 +23,93 @@ export const useData = () => {
 };
 
 export const DataProvider = ({ children }) => {
-    // State management for all data
-    const [occasions, setOccasions] = useState(mockOccasions);
-    const [services, setServices] = useState(mockServices);
-    const [categories, setCategories] = useState(mockCategories);
+    const [blogs, setBlogs] = useState([]);
+    const [loadingBlogs, setLoadingBlogs] = useState(true);
+
+    const [loadingPopularItems, setLoadingPopularItems] = useState(true);
+    const [loadingOccasions, setLoadingOccasions] = useState(true);
+    const [loadingServices, setLoadingServices] = useState(true);
+    const [loadingCategories, setLoadingCategories] = useState(true);
+
+    // Fetch Blogs
+    useEffect(() => {
+        const fetchBlogs = async () => {
+            try {
+                setLoadingBlogs(true);
+                const response = await axios.get('http://localhost:5000/api/blogs/getblogs');
+                setBlogs(response.data);
+            } catch (error) {
+                console.error("Error fetching blogs:", error);
+            } finally {
+                setLoadingBlogs(false);
+            }
+        };
+
+        fetchBlogs();
+    }, []);
+
+    // Fetch Popular Items
+    useEffect(() => {
+        const fetchPopularItems = async () => {
+            try {
+                setLoadingPopularItems(true);
+                const response = await axios.get('http://localhost:5000/api/food');
+                setPopularItems(response.data);
+            } catch (error) {
+                console.error("Error fetching popular items:", error);
+            } finally {
+                setLoadingPopularItems(false);
+            }
+        };
+        fetchPopularItems();
+    }, []);
+
+    // Fetch Occasions
+    useEffect(() => {
+        const fetchOccasions = async () => {
+            try {
+                setLoadingOccasions(true);
+                const response = await axios.get('http://localhost:5000/api/occasions');
+                setOccasions(response.data);
+            } catch (error) {
+                console.error("Error fetching occasions:", error);
+            } finally {
+                setLoadingOccasions(false);
+            }
+        };
+        fetchOccasions();
+    }, []);
+
+    // Fetch Services
+    useEffect(() => {
+        const fetchServices = async () => {
+            try {
+                setLoadingServices(true);
+                const response = await axios.get('http://localhost:5000/api/services');
+                setServices(response.data);
+            } catch (error) {
+                console.error("Error fetching services:", error);
+            } finally {
+                setLoadingServices(false);
+            }
+        };
+        fetchServices();
+    }, []);
+    const [occasions, setOccasions] = useState([]);
+    const [services, setServices] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [menuItems, setMenuItems] = useState(mockMenuItems);
     const [orders, setOrders] = useState(mockOrders);
-    const [blogs, setBlogs] = useState(mockBlogs);
-    const [popularItems, setPopularItems] = useState(mockPopularItems);
+
+    const [popularItems, setPopularItems] = useState([]);
     const [rangeMenus, setRangeMenus] = useState(mockRangeMenus);
     const [youtubeLinks, setYoutubeLinks] = useState(mockYoutubeLinks);
 
-    // OCCASIONS CRUD
-    const addOccasion = (occasion) => {
-        const newOccasion = {
-            ...occasion,
-            id: Math.max(...occasions.map(o => o.id), 0) + 1
-        };
-        setOccasions([...occasions, newOccasion]);
-    };
 
-    const updateOccasion = (id, updatedOccasion) => {
-        setOccasions(occasions.map(o => o.id === id ? { ...o, ...updatedOccasion } : o));
-    };
 
-    const deleteOccasion = (id) => {
-        setOccasions(occasions.filter(o => o.id !== id));
-    };
 
-    const toggleOccasionActive = (id) => {
-        setOccasions(occasions.map(o => o.id === id ? { ...o, active: !o.active } : o));
-    };
 
-    // SERVICES CRUD
-    const addService = (service) => {
-        const newService = {
-            ...service,
-            id: Math.max(...services.map(s => s.id), 0) + 1
-        };
-        setServices([...services, newService]);
-    };
 
-    const updateService = (id, updatedService) => {
-        setServices(services.map(s => s.id === id ? { ...s, ...updatedService } : s));
-    };
-
-    const deleteService = (id) => {
-        setServices(services.filter(s => s.id !== id));
-    };
-
-    // CATEGORIES CRUD
-    const addCategory = (category) => {
-        const newCategory = {
-            ...category,
-            id: Math.max(...categories.map(c => c.id), 0) + 1
-        };
-        setCategories([...categories, newCategory]);
-    };
-
-    const updateCategory = (id, updatedCategory) => {
-        setCategories(categories.map(c => c.id === id ? { ...c, ...updatedCategory } : c));
-    };
-
-    const deleteCategory = (id) => {
-        setCategories(categories.filter(c => c.id !== id));
-    };
 
 
 
@@ -163,8 +186,19 @@ export const DataProvider = ({ children }) => {
         return categoriesMap[categoryId] || null;
     };
 
+
+    const handleImageUpload = async (image) => {
+        if (!image || !image.startsWith('data:image')) return image;
+        try {
+            const response = await axios.post('http://localhost:5000/api/upload', { image });
+            return response.data.url;
+        } catch (error) {
+            console.error("Error uploading image:", error);
+            return image;
+        }
+    };
+
     const value = {
-        // Data
         occasions,
         services,
         categories,
@@ -172,69 +206,222 @@ export const DataProvider = ({ children }) => {
         orders,
 
         // Occasions
-        addOccasion,
-        updateOccasion,
-        deleteOccasion,
-        toggleOccasionActive,
+        occasions,
+        loadingOccasions,
+        addOccasion: async (occasion) => {
+            try {
+                const imageUrl = await handleImageUpload(occasion.image);
+                const occasionWithUrl = { ...occasion, image: imageUrl };
+                const response = await axios.post('http://localhost:5000/api/occasions', occasionWithUrl);
+                setOccasions([...occasions, response.data]);
+            } catch (error) {
+                console.error("Error adding occasion:", error);
+            }
+        },
+        updateOccasion: async (id, updatedData) => {
+            try {
+                let imageUrl = updatedData.image;
+                if (updatedData.image && updatedData.image.startsWith('data:image')) {
+                    imageUrl = await handleImageUpload(updatedData.image);
+                }
+                const dataWithUrl = { ...updatedData, image: imageUrl };
+                const response = await axios.put(`http://localhost:5000/api/occasions/${id}`, dataWithUrl);
+                setOccasions(occasions.map(o => o._id === id ? response.data : o));
+            } catch (error) {
+                console.error("Error updating occasion:", error);
+            }
+        },
+        deleteOccasion: async (id) => {
+            try {
+                await axios.delete(`http://localhost:5000/api/occasions/${id}`);
+                setOccasions(occasions.filter(o => o._id !== id));
+            } catch (error) {
+                console.error("Error deleting occasion:", error);
+            }
+        },
+        toggleOccasionActive: async (id) => {
+            const occasion = occasions.find(o => o._id === id);
+            if (occasion) {
+                try {
+                    const response = await axios.put(`http://localhost:5000/api/occasions/${id}`, { ...occasion, active: !occasion.active });
+                    setOccasions(occasions.map(o => o._id === id ? response.data : o));
+                } catch (error) {
+                    console.error("Error toggling occasion status:", error);
+                }
+            }
+        },
 
         // Services
-        addService,
-        updateService,
-        deleteService,
+        services,
+        loadingServices,
+        addService: async (service) => {
+            try {
+                const imageUrl = await handleImageUpload(service.image);
+                const serviceWithUrl = { ...service, image: imageUrl };
+                const response = await axios.post('http://localhost:5000/api/services', serviceWithUrl);
+                setServices([...services, response.data]);
+            } catch (error) {
+                console.error("Error adding service:", error);
+            }
+        },
+        updateService: async (id, updatedData) => {
+            try {
+                let imageUrl = updatedData.image;
+                if (updatedData.image && updatedData.image.startsWith('data:image')) {
+                    imageUrl = await handleImageUpload(updatedData.image);
+                }
+                const dataWithUrl = { ...updatedData, image: imageUrl };
+                const response = await axios.put(`http://localhost:5000/api/services/${id}`, dataWithUrl);
+                setServices(services.map(s => s._id === id ? response.data : s));
+            } catch (error) {
+                console.error("Error updating service:", error);
+            }
+        },
+        deleteService: async (id) => {
+            try {
+                await axios.delete(`http://localhost:5000/api/services/${id}`);
+                setServices(services.filter(s => s._id !== id));
+            } catch (error) {
+                console.error("Error deleting service:", error);
+            }
+        },
+        toggleServiceActive: async (id) => {
+            const service = services.find(s => s._id === id);
+            if (service) {
+                try {
+                    const response = await axios.put(`http://localhost:5000/api/services/${id}`, { ...service, active: !service.active });
+                    setServices(services.map(s => s._id === id ? response.data : s));
+                } catch (error) {
+                    console.error("Error toggling service status:", error);
+                }
+            }
+        },
 
-        // Categories
-        addCategory,
-        updateCategory,
-        deleteCategory,
+        addCategory: async (category) => {
+            try {
+                const imageUrl = await handleImageUpload(category.image);
+                const categoryWithUrl = { ...category, image: imageUrl };
+                const response = await axios.post('http://localhost:5000/api/categories', categoryWithUrl);
+                setCategories([...categories, response.data]);
+            } catch (error) {
+                console.error("Error adding category:", error);
+            }
+        },
+        updateCategory: async (id, updatedData) => {
+            try {
+                let imageUrl = updatedData.image;
+                if (updatedData.image && updatedData.image.startsWith('data:image')) {
+                    imageUrl = await handleImageUpload(updatedData.image);
+                }
+                const dataWithUrl = { ...updatedData, image: imageUrl };
+                const response = await axios.put(`http://localhost:5000/api/categories/${id}`, dataWithUrl);
+                setCategories(categories.map(c => c._id === id ? response.data : c));
+            } catch (error) {
+                console.error("Error updating category:", error);
+            }
+        },
+        deleteCategory: async (id) => {
+            try {
+                await axios.delete(`http://localhost:5000/api/categories/${id}`);
+                setCategories(categories.filter(c => c._id !== id));
+            } catch (error) {
+                console.error("Error deleting category:", error);
+            }
+        },
+        toggleCategoryActive: async (id) => {
+            const category = categories.find(c => c._id === id);
+            if (category) {
+                try {
+                    const response = await axios.put(`http://localhost:5000/api/categories/${id}`, { ...category, active: !category.active });
+                    setCategories(categories.map(c => c._id === id ? response.data : c));
+                } catch (error) {
+                    console.error("Error toggling category status:", error);
+                }
+            }
+        },
 
 
-
-        // Menu Items
         addMenuItem,
         addBulkMenuItems,
         updateMenuItem,
         deleteMenuItem,
         toggleMenuItemActive,
 
-        // Orders
         addOrder,
         updateOrder,
         updateOrderStatus,
         deleteOrder,
 
-        // Blogs
         blogs,
-        addBlog: (blog) => {
-            const newBlog = {
-                ...blog,
-                id: Date.now()
-            };
-            setBlogs([...blogs, newBlog]);
+        loadingBlogs,
+        addBlog: async (blog) => {
+            try {
+                const imageUrl = await handleImageUpload(blog.image);
+                const blogWithUrl = { ...blog, image: imageUrl };
+                const response = await axios.post('http://localhost:5000/api/blogs/addblog', blogWithUrl);
+                setBlogs([...blogs, response.data]);
+            } catch (error) {
+                console.error("Error adding blog:", error);
+            }
         },
-        updateBlog: (id, updatedData) => {
-            setBlogs(blogs.map(blog => blog.id === id ? { ...blog, ...updatedData } : blog));
+        updateBlog: async (id, updatedData) => {
+            try {
+                let imageUrl = updatedData.image;
+                if (updatedData.image && updatedData.image.startsWith('data:image')) {
+                    imageUrl = await handleImageUpload(updatedData.image);
+                }
+                const dataWithUrl = { ...updatedData, image: imageUrl };
+                const response = await axios.put(`http://localhost:5000/api/blogs/editblog/${id}`, dataWithUrl);
+                setBlogs(blogs.map(blog => blog._id === id ? response.data : blog));
+            } catch (error) {
+                console.error("Error updating blog:", error);
+            }
         },
-        deleteBlog: (id) => {
-            setBlogs(blogs.filter(blog => blog.id !== id));
+        deleteBlog: async (id) => {
+            try {
+                await axios.delete(`http://localhost:5000/api/blogs/deleteblog/${id}`);
+                setBlogs(blogs.filter(blog => blog._id !== id));
+            } catch (error) {
+                console.error("Error deleting blog:", error);
+            }
         },
 
-        // Popular Items
+
         popularItems,
-        addPopularItem: (item) => {
-            const newItem = {
-                ...item,
-                id: Date.now()
-            };
-            setPopularItems([...popularItems, newItem]);
+        loadingPopularItems,
+        addPopularItem: async (item) => {
+            try {
+                const imageUrl = await handleImageUpload(item.image);
+                const itemWithUrl = { ...item, image: imageUrl };
+                const response = await axios.post('http://localhost:5000/api/food', itemWithUrl);
+                setPopularItems([...popularItems, response.data]);
+            } catch (error) {
+                console.error("Error adding popular item:", error);
+            }
         },
-        updatePopularItem: (id, updatedData) => {
-            setPopularItems(popularItems.map(item => item.id === id ? { ...item, ...updatedData } : item));
+        updatePopularItem: async (id, updatedData) => {
+            try {
+                let imageUrl = updatedData.image;
+                if (updatedData.image && updatedData.image.startsWith('data:image')) {
+                    imageUrl = await handleImageUpload(updatedData.image);
+                }
+                const dataWithUrl = { ...updatedData, image: imageUrl };
+                const response = await axios.put(`http://localhost:5000/api/food/${id}`, dataWithUrl);
+                setPopularItems(popularItems.map(item => item._id === id ? response.data : item));
+            } catch (error) {
+                console.error("Error updating popular item:", error);
+            }
         },
-        deletePopularItem: (id) => {
-            setPopularItems(popularItems.filter(item => item.id !== id));
+        deletePopularItem: async (id) => {
+            try {
+                await axios.delete(`http://localhost:5000/api/food/${id}`);
+                setPopularItems(popularItems.filter(item => item._id !== id));
+            } catch (error) {
+                console.error("Error deleting popular item:", error);
+            }
         },
 
-        // Range Menus
+
         rangeMenus,
         addRangeMenu: (menu) => {
             const newMenu = {
@@ -250,7 +437,7 @@ export const DataProvider = ({ children }) => {
             setRangeMenus(rangeMenus.filter(menu => menu.id !== id));
         },
 
-        // YouTube Links
+
         youtubeLinks,
         addYoutubeLink: (link) => {
             const newLink = {
@@ -263,7 +450,7 @@ export const DataProvider = ({ children }) => {
             setYoutubeLinks(youtubeLinks.filter(link => link.id !== id));
         },
 
-        // Helpers
+
         getMenuItemById,
         getOrderById,
         getMenuCategoryById

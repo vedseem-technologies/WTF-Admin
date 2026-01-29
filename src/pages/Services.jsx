@@ -1,24 +1,26 @@
 import { useState } from 'react';
 import { useData } from '../context/DataContext';
 import Modal from '../components/common/Modal';
+import Toggle from '../components/common/Toggle';
 import ImageUpload from '../components/common/ImageUpload';
 import './Occasions.css'; // Reusing same styles
 
 const Services = () => {
-    const { services, addService, updateService, deleteService } = useData();
+    const { services, loadingServices, addService, updateService, deleteService, toggleServiceActive } = useData();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingService, setEditingService] = useState(null);
-    const [formData, setFormData] = useState({ title: '', image: '' });
+    const [formData, setFormData] = useState({ title: '', image: '', active: true });
     const [searchTerm, setSearchTerm] = useState('');
+    const [filter, setFilter] = useState('all');
 
     const handleOpenModal = (service = null) => {
         if (service) {
             setEditingService(service);
-            setFormData({ title: service.title, image: service.image });
+            setFormData({ title: service.title, image: service.image, active: service.active });
         } else {
             setEditingService(null);
-            setFormData({ title: '', image: '' });
+            setFormData({ title: '', image: '', active: true });
         }
         setIsModalOpen(true);
     };
@@ -26,14 +28,14 @@ const Services = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingService(null);
-        setFormData({ title: '', image: '' });
+        setFormData({ title: '', image: '', active: true });
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
         if (editingService) {
-            updateService(editingService.id, formData);
+            updateService(editingService._id, formData);
         } else {
             addService(formData);
         }
@@ -47,9 +49,13 @@ const Services = () => {
         }
     };
 
-    const filteredServices = services.filter(service =>
-        service.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredServices = services.filter(service => {
+        const matchesSearch = service.title.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesFilter = filter === 'all' ||
+            (filter === 'active' && service.active) ||
+            (filter === 'inactive' && !service.active);
+        return matchesSearch && matchesFilter;
+    }).sort((a, b) => (b.createdAt || b._id).localeCompare(a.createdAt || a._id));
 
     return (
         <div className="page-container">
@@ -72,42 +78,70 @@ const Services = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <div className="filter-buttons">
-                    <button className="filter-btn active">
+                    <button
+                        className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+                        onClick={() => setFilter('all')}
+                    >
                         All ({services.length})
+                    </button>
+                    <button
+                        className={`filter-btn ${filter === 'active' ? 'active' : ''}`}
+                        onClick={() => setFilter('active')}
+                    >
+                        Active ({services.filter(s => s.active).length})
+                    </button>
+                    <button
+                        className={`filter-btn ${filter === 'inactive' ? 'active' : ''}`}
+                        onClick={() => setFilter('inactive')}
+                    >
+                        Inactive ({services.filter(s => !s.active).length})
                     </button>
                 </div>
             </div>
 
-            <div className="occasions-grid">
-                {filteredServices.map((service) => (
-                    <div key={service.id} className="occasion-card">
-                        <div className="occasion-image">
-                            <img src={service.image} alt={service.title} />
-                        </div>
-                        <div className="occasion-content">
-                            <h3 className="occasion-title">{service.title}</h3>
-                            <div className="occasion-actions">
-                                <div className="occasion-buttons">
-                                    <button
-                                        className="btn btn-sm btn-outline"
-                                        onClick={() => handleOpenModal(service)}
-                                    >
-                                        ✏️ Edit
-                                    </button>
-                                    <button
-                                        className="btn btn-sm btn-danger"
-                                        onClick={() => handleDelete(service.id)}
-                                    >
-                                        🗑️ Delete
-                                    </button>
+            {filteredServices.length > 0 ? (
+                <div className="occasions-grid">
+                    {filteredServices.map((service) => (
+                        <div key={service._id} className={`occasion-card ${!service.active ? 'inactive' : ''}`}>
+                            <div className="occasion-image">
+                                <img
+                                    src={service.image}
+                                    alt={service.title}
+                                    referrerPolicy="no-referrer"
+                                    crossOrigin="anonymous"
+                                />
+                                {!service.active && <div className="inactive-overlay">Inactive</div>}
+                            </div>
+                            <div className="occasion-content">
+                                <h3 className="occasion-title">{service.title}</h3>
+                                <div className="occasion-actions">
+                                    <div className="occasion-toggle">
+                                        <span className="toggle-label">Active</span>
+                                        <Toggle
+                                            checked={service.active}
+                                            onChange={() => toggleServiceActive(service._id)}
+                                        />
+                                    </div>
+                                    <div className="occasion-buttons">
+                                        <button
+                                            className="btn btn-sm btn-outline"
+                                            onClick={() => handleOpenModal(service)}
+                                        >
+                                            ✏️ Edit
+                                        </button>
+                                        <button
+                                            className="btn btn-sm btn-danger"
+                                            onClick={() => handleDelete(service._id)}
+                                        >
+                                            🗑️ Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
-
-            {filteredServices.length === 0 && (
+                    ))}
+                </div>
+            ) : (
                 <div className="empty-state">
                     <span className="empty-icon">🍽️</span>
                     <h3>No services found</h3>
@@ -138,6 +172,19 @@ const Services = () => {
                         value={formData.image}
                         onChange={(image) => setFormData({ ...formData, image })}
                     />
+
+                    <div className="form-group">
+                        <div className="toggle-field">
+                            <div>
+                                <label className="form-label">Active Status</label>
+                                <p className="form-help">Show this service on the frontend</p>
+                            </div>
+                            <Toggle
+                                checked={formData.active}
+                                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                            />
+                        </div>
+                    </div>
 
                     <div className="modal-actions">
                         <button type="button" className="btn btn-outline" onClick={handleCloseModal}>

@@ -1,24 +1,26 @@
 import { useState } from 'react';
 import { useData } from '../context/DataContext';
 import Modal from '../components/common/Modal';
+import Toggle from '../components/common/Toggle';
 import ImageUpload from '../components/common/ImageUpload';
 import './Occasions.css'; // Reusing same styles
 
 const Categories = () => {
-    const { categories, addCategory, updateCategory, deleteCategory } = useData();
+    const { categories, loadingCategories, addCategory, updateCategory, deleteCategory, toggleCategoryActive } = useData();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
-    const [formData, setFormData] = useState({ title: '', image: '' });
+    const [formData, setFormData] = useState({ title: '', image: '', active: true });
     const [searchTerm, setSearchTerm] = useState('');
+    const [filter, setFilter] = useState('all');
 
     const handleOpenModal = (category = null) => {
         if (category) {
             setEditingCategory(category);
-            setFormData({ title: category.title, image: category.image });
+            setFormData({ title: category.title, image: category.image, active: category.active });
         } else {
             setEditingCategory(null);
-            setFormData({ title: '', image: '' });
+            setFormData({ title: '', image: '', active: true });
         }
         setIsModalOpen(true);
     };
@@ -26,14 +28,14 @@ const Categories = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingCategory(null);
-        setFormData({ title: '', image: '' });
+        setFormData({ title: '', image: '', active: true });
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
         if (editingCategory) {
-            updateCategory(editingCategory.id, formData);
+            updateCategory(editingCategory._id, formData);
         } else {
             addCategory(formData);
         }
@@ -47,9 +49,13 @@ const Categories = () => {
         }
     };
 
-    const filteredCategories = categories.filter(category =>
-        category.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredCategories = categories.filter(category => {
+        const matchesSearch = category.title.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesFilter = filter === 'all' ||
+            (filter === 'active' && category.active) ||
+            (filter === 'inactive' && !category.active);
+        return matchesSearch && matchesFilter;
+    }).sort((a, b) => (b.createdAt || b._id).localeCompare(a.createdAt || a._id));
 
     return (
         <div className="page-container">
@@ -72,42 +78,74 @@ const Categories = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <div className="filter-buttons">
-                    <button className="filter-btn active">
+                    <button
+                        className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+                        onClick={() => setFilter('all')}
+                    >
                         All ({categories.length})
+                    </button>
+                    <button
+                        className={`filter-btn ${filter === 'active' ? 'active' : ''}`}
+                        onClick={() => setFilter('active')}
+                    >
+                        Active ({categories.filter(c => c.active).length})
+                    </button>
+                    <button
+                        className={`filter-btn ${filter === 'inactive' ? 'active' : ''}`}
+                        onClick={() => setFilter('inactive')}
+                    >
+                        Inactive ({categories.filter(c => !c.active).length})
                     </button>
                 </div>
             </div>
 
-            <div className="occasions-grid">
-                {filteredCategories.map((category) => (
-                    <div key={category.id} className="occasion-card">
-                        <div className="occasion-image">
-                            <img src={category.image} alt={category.title} />
-                        </div>
-                        <div className="occasion-content">
-                            <h3 className="occasion-title">{category.title}</h3>
-                            <div className="occasion-actions">
-                                <div className="occasion-buttons">
-                                    <button
-                                        className="btn btn-sm btn-outline"
-                                        onClick={() => handleOpenModal(category)}
-                                    >
-                                        ✏️ Edit
-                                    </button>
-                                    <button
-                                        className="btn btn-sm btn-danger"
-                                        onClick={() => handleDelete(category.id)}
-                                    >
-                                        🗑️ Delete
-                                    </button>
+            {loadingCategories ? (
+                <div className="loading-state">
+                    <h3>...loading</h3>
+                </div>
+            ) : filteredCategories.length > 0 ? (
+                <div className="occasions-grid">
+                    {filteredCategories.map((category) => (
+                        <div key={category._id} className={`occasion-card ${!category.active ? 'inactive' : ''}`}>
+                            <div className="occasion-image">
+                                <img
+                                    src={category.image}
+                                    alt={category.title}
+                                    referrerPolicy="no-referrer"
+                                    crossOrigin="anonymous"
+                                />
+                                {!category.active && <div className="inactive-overlay">Inactive</div>}
+                            </div>
+                            <div className="occasion-content">
+                                <h3 className="occasion-title">{category.title}</h3>
+                                <div className="occasion-actions">
+                                    <div className="occasion-toggle">
+                                        <span className="toggle-label">Active</span>
+                                        <Toggle
+                                            checked={category.active}
+                                            onChange={() => toggleCategoryActive(category._id)}
+                                        />
+                                    </div>
+                                    <div className="occasion-buttons">
+                                        <button
+                                            className="btn btn-sm btn-outline"
+                                            onClick={() => handleOpenModal(category)}
+                                        >
+                                            ✏️ Edit
+                                        </button>
+                                        <button
+                                            className="btn btn-sm btn-danger"
+                                            onClick={() => handleDelete(category._id)}
+                                        >
+                                            🗑️ Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
-
-            {filteredCategories.length === 0 && (
+                    ))}
+                </div>
+            ) : (
                 <div className="empty-state">
                     <span className="empty-icon">📁</span>
                     <h3>No categories found</h3>
@@ -138,6 +176,19 @@ const Categories = () => {
                         value={formData.image}
                         onChange={(image) => setFormData({ ...formData, image })}
                     />
+
+                    <div className="form-group">
+                        <div className="toggle-field">
+                            <div>
+                                <label className="form-label">Active Status</label>
+                                <p className="form-help">Show this category on the frontend</p>
+                            </div>
+                            <Toggle
+                                checked={formData.active}
+                                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                            />
+                        </div>
+                    </div>
 
                     <div className="modal-actions">
                         <button type="button" className="btn btn-outline" onClick={handleCloseModal}>

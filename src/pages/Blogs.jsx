@@ -14,7 +14,7 @@ const BLOG_TYPES = [
 ];
 
 const Blogs = () => {
-    const { blogs, addBlog, updateBlog, deleteBlog } = useData();
+    const { blogs, loadingBlogs, addBlog, updateBlog, deleteBlog } = useData();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBlog, setEditingBlog] = useState(null);
     const [formData, setFormData] = useState({
@@ -57,7 +57,7 @@ const Blogs = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (editingBlog) {
-            updateBlog(editingBlog.id, formData);
+            updateBlog(editingBlog._id, formData);
         } else {
             addBlog(formData);
         }
@@ -73,7 +73,11 @@ const Blogs = () => {
     const filteredBlogs = blogs.filter(blog =>
         blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         blog.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    ).sort((a, b) => {
+        const dateDiff = new Date(b.date) - new Date(a.date);
+        if (dateDiff !== 0) return dateDiff;
+        return b._id.localeCompare(a._id); 
+    });
 
     return (
         <div className="page-container">
@@ -100,6 +104,7 @@ const Blogs = () => {
             </div>
 
             <div className="table-container">
+
                 <table className="table blogs-table">
                     <thead>
                         <tr>
@@ -112,10 +117,15 @@ const Blogs = () => {
                     </thead>
                     <tbody>
                         {filteredBlogs.map((blog) => (
-                            <tr key={blog.id}>
+                            <tr key={blog._id}>
                                 <td>
                                     <div className="blog-image-cell">
-                                        <img src={blog.image} alt={blog.title} />
+                                        <img
+                                            src={blog.image}
+                                            alt={blog.title}
+                                            referrerPolicy="no-referrer"
+                                            crossOrigin="anonymous"
+                                        />
                                     </div>
                                 </td>
                                 <td>
@@ -139,7 +149,7 @@ const Blogs = () => {
                                         </button>
                                         <button
                                             className="btn-icon btn-delete"
-                                            onClick={() => handleDelete(blog.id)}
+                                            onClick={() => handleDelete(blog._id)}
                                             title="Delete"
                                         >
                                             🗑️
@@ -151,7 +161,7 @@ const Blogs = () => {
                     </tbody>
                 </table>
 
-                {filteredBlogs.length === 0 && (
+                {!loadingBlogs && filteredBlogs.length === 0 && (
                     <div className="empty-state">
                         <span className="empty-icon">📝</span>
                         <h3>No blogs found</h3>

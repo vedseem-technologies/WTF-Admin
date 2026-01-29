@@ -6,13 +6,13 @@ import ImageUpload from '../components/common/ImageUpload';
 import './Occasions.css';
 
 const Occasions = () => {
-    const { occasions, addOccasion, updateOccasion, deleteOccasion, toggleOccasionActive } = useData();
+    const { occasions, loadingOccasions, addOccasion, updateOccasion, deleteOccasion, toggleOccasionActive } = useData();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingOccasion, setEditingOccasion] = useState(null);
     const [formData, setFormData] = useState({ title: '', image: '', active: true });
     const [searchTerm, setSearchTerm] = useState('');
-    const [filter, setFilter] = useState('all'); // all, active, inactive
+    const [filter, setFilter] = useState('all');
 
     const handleOpenModal = (occasion = null) => {
         if (occasion) {
@@ -35,7 +35,7 @@ const Occasions = () => {
         e.preventDefault();
 
         if (editingOccasion) {
-            updateOccasion(editingOccasion.id, formData);
+            updateOccasion(editingOccasion._id, formData);
         } else {
             addOccasion(formData);
         }
@@ -55,7 +55,7 @@ const Occasions = () => {
             (filter === 'active' && occasion.active) ||
             (filter === 'inactive' && !occasion.active);
         return matchesSearch && matchesFilter;
-    });
+    }).sort((a, b) => (b.createdAt || b._id).localeCompare(a.createdAt || a._id)); // Sort by newest first
 
     return (
         <div className="page-container">
@@ -100,50 +100,60 @@ const Occasions = () => {
                 </div>
             </div>
 
-            <div className="occasions-grid">
-                {filteredOccasions.map((occasion) => (
-                    <div key={occasion.id} className={`occasion-card ${!occasion.active ? 'inactive' : ''}`}>
-                        <div className="occasion-image">
-                            <img src={occasion.image} alt={occasion.title} />
-                            {!occasion.active && <div className="inactive-overlay">Inactive</div>}
-                        </div>
-                        <div className="occasion-content">
-                            <h3 className="occasion-title">{occasion.title}</h3>
-                            <div className="occasion-actions">
-                                <div className="occasion-toggle">
-                                    <span className="toggle-label">Active</span>
-                                    <Toggle
-                                        checked={occasion.active}
-                                        onChange={() => toggleOccasionActive(occasion.id)}
-                                    />
-                                </div>
-                                <div className="occasion-buttons">
-                                    <button
-                                        className="btn btn-sm btn-outline"
-                                        onClick={() => handleOpenModal(occasion)}
-                                    >
-                                        ✏️ Edit
-                                    </button>
-                                    <button
-                                        className="btn btn-sm btn-danger"
-                                        onClick={() => handleDelete(occasion.id)}
-                                    >
-                                        🗑️ Delete
-                                    </button>
+            {
+            filteredOccasions.length > 0 ? (
+                <div className="occasions-grid">
+                    {filteredOccasions.map((occasion) => (
+                        <div key={occasion._id} className={`occasion-card ${!occasion.active ? 'inactive' : ''}`}>
+                            <div className="occasion-image">
+                                <img
+                                    src={occasion.image}
+                                    alt={occasion.title}
+                                    referrerPolicy="no-referrer"
+                                    crossOrigin="anonymous"
+                                />
+                                {!occasion.active && <div className="inactive-overlay">Inactive</div>}
+                            </div>
+                            <div className="occasion-content">
+                                <h3 className="occasion-title">{occasion.title}</h3>
+                                <div className="occasion-actions">
+                                    <div className="occasion-toggle">
+                                        <span className="toggle-label">Active</span>
+                                        <Toggle
+                                            checked={occasion.active}
+                                            onChange={() => toggleOccasionActive(occasion._id)}
+                                        />
+                                    </div>
+                                    <div className="occasion-buttons">
+                                        <button
+                                            className="btn btn-sm btn-outline"
+                                            onClick={() => handleOpenModal(occasion)}
+                                        >
+                                            ✏️ Edit
+                                        </button>
+                                        <button
+                                            className="btn btn-sm btn-danger"
+                                            onClick={() => handleDelete(occasion._id)}
+                                        >
+                                            🗑️ Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
-
-            {filteredOccasions.length === 0 && (
+                    ))}
+                </div>
+            )  
+             : 
+                (
                 <div className="empty-state">
                     <span className="empty-icon">🎉</span>
                     <h3>No occasions found</h3>
                     <p>Try adjusting your search or filter criteria</p>
                 </div>
-            )}
+            )
+        
+            }
 
             <Modal
                 isOpen={isModalOpen}

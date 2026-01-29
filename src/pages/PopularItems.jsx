@@ -5,7 +5,7 @@ import ImageUpload from '../components/common/ImageUpload';
 import './PopularItems.css';
 
 const PopularItems = () => {
-    const { popularItems, addPopularItem, updatePopularItem, deletePopularItem } = useData();
+    const { popularItems, loadingPopularItems, addPopularItem, updatePopularItem, deletePopularItem } = useData();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [formData, setFormData] = useState({
@@ -48,7 +48,7 @@ const PopularItems = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (editingItem) {
-            updatePopularItem(editingItem.id, formData);
+            updatePopularItem(editingItem._id, formData);
         } else {
             addPopularItem(formData);
         }
@@ -64,7 +64,7 @@ const PopularItems = () => {
     const filteredItems = popularItems.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    ).sort((a, b) => (b.createdAt || b._id).localeCompare(a.createdAt || a._id)); 
 
     const renderStars = (rating) => {
         return '⭐'.repeat(rating);
@@ -95,6 +95,7 @@ const PopularItems = () => {
             </div>
 
             <div className="table-container">
+
                 <table className="table popular-items-table">
                     <thead>
                         <tr>
@@ -108,10 +109,15 @@ const PopularItems = () => {
                     </thead>
                     <tbody>
                         {filteredItems.map((item) => (
-                            <tr key={item.id}>
+                            <tr key={item._id}>
                                 <td>
                                     <div className="item-image-cell">
-                                        <img src={item.image} alt={item.name} />
+                                        <img
+                                            src={item.image}
+                                            alt={item.name}
+                                            referrerPolicy="no-referrer"
+                                            crossOrigin="anonymous"
+                                        />
                                     </div>
                                 </td>
                                 <td className="item-name">{item.name}</td>
@@ -131,7 +137,7 @@ const PopularItems = () => {
                                         </button>
                                         <button
                                             className="btn-icon btn-delete"
-                                            onClick={() => handleDelete(item.id)}
+                                            onClick={() => handleDelete(item._id)}
                                             title="Delete"
                                         >
                                             🗑️
@@ -143,13 +149,20 @@ const PopularItems = () => {
                     </tbody>
                 </table>
 
-                {filteredItems.length === 0 && (
-                    <div className="empty-state">
-                        <span className="empty-icon">⭐</span>
-                        <h3>No popular items found</h3>
-                        <p>Start by adding your first popular item</p>
-                    </div>
-                )}
+
+                {
+                    loadingPopularItems ? (
+                        <div className="loading-state">
+                            <p>...loading</p>
+                        </div>
+                    ) : !loadingPopularItems && filteredItems.length === 0 && (
+                        <div className="empty-state">
+                            <span className="empty-icon">⭐</span>
+                            <h3>No popular items found</h3>
+                            <p>Start by adding your first popular item</p>
+                        </div>
+                    )
+                }
             </div>
 
             <Modal
