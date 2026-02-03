@@ -99,6 +99,21 @@ export const DataProvider = ({ children }) => {
     }, []);
 
     useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                setLoadingCategories(true);
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/categories`);
+                setCategories(response.data);
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+            } finally {
+                setLoadingCategories(false);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
         const fetchYoutubeLinks = async () => {
             try {
                 setLoadingYoutubeLinks(true);
@@ -427,6 +442,8 @@ export const DataProvider = ({ children }) => {
             }
         },
 
+        // Categories
+        loadingCategories,
         addCategory: async (category) => {
             const tempId = `temp-${Date.now()}`;
             const optimisticCategory = { ...category, _id: tempId, createdAt: new Date() };
@@ -725,6 +742,62 @@ export const DataProvider = ({ children }) => {
             }
         },
 
+
+        // Occasion Menu Selections
+        occasionMenuSelections: {},
+
+        getOccasionMenuSelection: (occasionId) => {
+            const key = `occasion_menu_${occasionId}`;
+            const saved = localStorage.getItem(key);
+            return saved ? JSON.parse(saved) : {
+                starters: [],
+                mainCourses: [],
+                desserts: [],
+                breadRice: []
+            };
+        },
+
+        saveOccasionMenuSelection: (occasionId, selection) => {
+            const key = `occasion_menu_${occasionId}`;
+            localStorage.setItem(key, JSON.stringify(selection));
+            console.log(`Menu selection saved for occasion ${occasionId}:`, selection);
+        },
+
+        // Service Menu Selections
+        getServiceMenuSelection: (serviceId) => {
+            const key = `service_menu_${serviceId}`;
+            const saved = localStorage.getItem(key);
+            return saved ? JSON.parse(saved) : {
+                starters: [],
+                mainCourses: [],
+                desserts: [],
+                breadRice: []
+            };
+        },
+
+        saveServiceMenuSelection: (serviceId, selection) => {
+            const key = `service_menu_${serviceId}`;
+            localStorage.setItem(key, JSON.stringify(selection));
+            console.log(`Menu selection saved for service ${serviceId}:`, selection);
+        },
+
+        // Category Menu Selections
+        getCategoryMenuSelection: (categoryId) => {
+            const key = `category_menu_${categoryId}`;
+            const saved = localStorage.getItem(key);
+            return saved ? JSON.parse(saved) : {
+                starters: [],
+                mainCourses: [],
+                desserts: [],
+                breadRice: []
+            };
+        },
+
+        saveCategoryMenuSelection: (categoryId, selection) => {
+            const key = `category_menu_${categoryId}`;
+            localStorage.setItem(key, JSON.stringify(selection));
+            console.log(`Menu selection saved for category ${categoryId}:`, selection);
+        },
 
         getMenuItemById,
         getOrderById,

@@ -56,7 +56,7 @@ const Services = () => {
             (filter === 'active' && service.active) ||
             (filter === 'inactive' && !service.active);
         return matchesSearch && matchesFilter;
-    }).sort((a, b) => (b.createdAt || b._id).localeCompare(a.createdAt || a._id));
+    }).sort((a, b) => String(b.createdAt || b._id).localeCompare(String(a.createdAt || a._id)));
 
     return (
         <div className="page-container">

@@ -1,28 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import '../components/common/MultiSelectDropdown.css';
 import './Occasions.css';
 
-const MENU_CATEGORIES = {
-  STARTER: 1,
-  MAIN_COURSE: 2,
-  BREAD_RICE: 3,
-  DESSERT: 4
-};
-
-const OccasionDetail = () => {
+const ServiceDetail = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { occasions, menuItems, getOccasionMenuSelection, saveOccasionMenuSelection } = useData();
-  const occasion = occasions.find(o => o._id === id);
+  const { services, menuItems, getServiceMenuSelection, saveServiceMenuSelection } = useData();
+  const service = services.find(s => s._id === id);
 
   const [selectedStarters, setSelectedStarters] = useState([]);
   const [selectedMainCourse, setSelectedMainCourse] = useState([]);
   const [selectedDesserts, setSelectedDesserts] = useState([]);
   const [selectedBreadRice, setSelectedBreadRice] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
 
   const [openDropdown, setOpenDropdown] = useState(null);
   const [searchTerms, setSearchTerms] = useState({
@@ -32,10 +23,10 @@ const OccasionDetail = () => {
     breadRice: ''
   });
 
-  // Load saved menu selections for this occasion
+  // Load saved menu selections for this service
   useEffect(() => {
     if (id && menuItems.length > 0) {
-      const savedSelection = getOccasionMenuSelection(id);
+      const savedSelection = getServiceMenuSelection(id);
 
       // Convert saved IDs to full menu item objects
       const starterItems = menuItems.filter(item => savedSelection.starters?.includes(item._id));
@@ -51,8 +42,6 @@ const OccasionDetail = () => {
     }
   }, [id, menuItems]);
 
-  // Filter menu items by category - REMOVED, now showing all items in each dropdown
-  // All dropdowns will show all menu items regardless of category
   const allMenuItems = menuItems;
 
   const handleSave = () => {
@@ -63,18 +52,18 @@ const OccasionDetail = () => {
       breadRice: selectedBreadRice.map(item => item._id)
     };
 
-    saveOccasionMenuSelection(id, menuSelection);
-    alert(`Menu items saved successfully for ${occasion.title}!`);
+    saveServiceMenuSelection(id, menuSelection);
+    alert(`Menu items saved successfully for ${service.title}!`);
   };
 
   const totalSelected = selectedStarters.length + selectedMainCourse.length +
     selectedDesserts.length + selectedBreadRice.length;
 
-  if (!occasion) {
+  if (!service) {
     return (
       <div className="page-container">
         <div className="loading-state">
-          <h3>Occasion not found</h3>
+          <h3>Service not found</h3>
         </div>
       </div>
     );
@@ -119,7 +108,7 @@ const OccasionDetail = () => {
     };
 
     const filteredOptions = options.filter((item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      (item.name || item.title).toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -135,7 +124,7 @@ const OccasionDetail = () => {
           ) : (
             selected.map((item) => (
               <span key={item._id} className="ms-chip">
-                {item.name}
+                {item.name || item.title}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -175,7 +164,7 @@ const OccasionDetail = () => {
                       className="ms-option"
                       onClick={() => toggleItem(item)}
                     >
-                      <span>{item.name}</span>
+                      <span>{item.name || item.title}</span>
                       <input type="checkbox" checked={checked} readOnly />
                     </div>
                   );
@@ -194,8 +183,8 @@ const OccasionDetail = () => {
     <div className="page-container">
       <div className="page-header">
         <div className="page-header-content">
-          <h2 className="page-title-big">🎉 {occasion.title}</h2>
-          <p className="page-description">Select menu items for this occasion</p>
+          <h2 className="page-title-big">🛎️ {service.title}</h2>
+          <p className="page-description">Select menu items for this service</p>
         </div>
       </div>
 
@@ -242,65 +231,21 @@ const OccasionDetail = () => {
           />
         </div>
 
-        {/* Summary & Report Section */}
+        {/* Summary Section */}
         {totalSelected > 0 && (
-          <div style={{ marginTop: '32px', borderTop: '2px solid var(--border)', paddingTop: '24px' }}>
-            <h3 className="page-subtitle">📊 Selection Summary</h3>
-
-            <div className="alert alert-info" style={{ marginBottom: '24px' }}>
-              <strong>Total Items: {totalSelected}</strong>
-            </div>
-
-            <div className="report-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-              {selectedStarters.length > 0 && (
-                <div className="report-column">
-                  <h4 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--primary)' }}>🥗 Starters ({selectedStarters.length})</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    {selectedStarters.map(item => (
-                      <li key={item._id} style={{ marginBottom: '4px', fontSize: '0.9rem' }}>{item.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {selectedMainCourse.length > 0 && (
-                <div className="report-column">
-                  <h4 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--primary)' }}>🍛 Main Course ({selectedMainCourse.length})</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    {selectedMainCourse.map(item => (
-                      <li key={item._id} style={{ marginBottom: '4px', fontSize: '0.9rem' }}>{item.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {selectedDesserts.length > 0 && (
-                <div className="report-column">
-                  <h4 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--primary)' }}>🍰 Desserts ({selectedDesserts.length})</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    {selectedDesserts.map(item => (
-                      <li key={item._id} style={{ marginBottom: '4px', fontSize: '0.9rem' }}>{item.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {selectedBreadRice.length > 0 && (
-                <div className="report-column">
-                  <h4 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--primary)' }}>🍚 Rice & Bread ({selectedBreadRice.length})</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    {selectedBreadRice.map(item => (
-                      <li key={item._id} style={{ marginBottom: '4px', fontSize: '0.9rem' }}>{item.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+          <div className="alert alert-info" style={{ marginTop: '24px' }}>
+            <strong>Total: {totalSelected} item(s) selected</strong>
+            <div style={{ fontSize: '0.875rem', marginTop: '8px', color: 'var(--info)' }}>
+              Starters: {selectedStarters.length} |
+              Main Course: {selectedMainCourse.length} |
+              Desserts: {selectedDesserts.length} |
+              Rice & Bread: {selectedBreadRice.length}
             </div>
           </div>
         )}
 
         {/* Save Button */}
-        <div style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+        <div style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           <button
             className="btn btn-outline"
             onClick={() => {
@@ -326,4 +271,4 @@ const OccasionDetail = () => {
   );
 };
 
-export default OccasionDetail;
+export default ServiceDetail;

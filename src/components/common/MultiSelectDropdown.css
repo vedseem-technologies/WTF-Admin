@@ -1,0 +1,191 @@
+.ms-wrapper {
+  width: 100%;
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.ms-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.ms-selected-bar {
+  min-height: 50px;
+  border: 2px solid var(--primary);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ms-selected-bar:hover {
+  border-color: var(--primary-dark);
+  box-shadow: 0 2px 8px rgba(255, 106, 61, 0.15);
+}
+
+.ms-placeholder {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.ms-chip {
+  background: var(--primary);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.ms-chip:hover {
+  background: var(--primary-dark);
+}
+
+.ms-chip button {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+.ms-chip button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ms-arrow {
+  margin-left: auto;
+  color: var(--primary);
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.ms-dropdown {
+  position: relative;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  margin-top: 8px;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ms-search {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f9fafb;
+}
+
+.ms-search-icon {
+  font-size: 16px;
+}
+
+.ms-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.ms-search input::placeholder {
+  color: #9ca3af;
+}
+
+.ms-options-list {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ms-option {
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ms-option:last-child {
+  border-bottom: none;
+}
+
+.ms-option:hover {
+  background: #f9fafb;
+}
+
+.ms-option span {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.ms-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.ms-no-results {
+  padding: 24px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* Scrollbar styling */
+.ms-options-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ms-options-list::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.ms-options-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.ms-options-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

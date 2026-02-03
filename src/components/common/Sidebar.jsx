@@ -5,10 +5,12 @@ import './Sidebar.css';
 
 const Sidebar = () => {
     const location = useLocation();
-    const { occasions, packages } = useData();
+    const { occasions, packages, services, categories } = useData();
     const [sidebarSearch, setSidebarSearch] = useState('');
     const [isMenuSummaryOpen, setIsMenuSummaryOpen] = useState(location.pathname.startsWith('/menu/'));
     const [isOccasionsOpen, setIsOccasionsOpen] = useState(location.pathname.startsWith('/occasions'));
+    const [isServicesOpen, setIsServicesOpen] = useState(false);
+    const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
     const [expandedOccasionId, setExpandedOccasionId] = useState(null);
 
     const topItems = [
@@ -16,8 +18,6 @@ const Sidebar = () => {
     ];
 
     const bottomItems = [
-        { path: '/services', icon: '🍽️', label: 'Services' },
-        { path: '/categories', icon: '📁', label: 'Categories' },
         { path: '/menu-items', icon: '🍕', label: 'Menu Items' },
         { path: '/blogs', icon: '📝', label: 'Blogs' },
         { path: '/popular-items', icon: '⭐', label: 'Popular Items' },
@@ -114,6 +114,62 @@ const Sidebar = () => {
                                 </div>
                             );
                         })}
+                    </div>
+                </div>
+
+                {/* Services Dropdown */}
+                <div className={`nav-dropdown ${location.pathname.startsWith('/services') ? 'active' : ''}`}>
+                    <NavLink
+                        to="/services"
+                        className={({ isActive }) =>
+                            isActive ? 'nav-item active' : 'nav-item'
+                        }
+                        onClick={() => setIsServicesOpen(!isServicesOpen)}
+                    >
+                        <span className="nav-icon">🛎️</span>
+                        <span className="nav-label">Services</span>
+                        <span className={`dropdown-arrow ${isServicesOpen ? 'open' : ''}`}>▾</span>
+                    </NavLink>
+
+                    <div className={`dropdown-content ${isServicesOpen ? 'show' : ''}`}>
+                        {services.map((service) => (
+                            <NavLink
+                                key={service._id}
+                                to={`/services/${service._id}`}
+                                className="sub-nav-item"
+                            >
+                                <span className="nav-icon">🔹</span>
+                                <span className="nav-label">{service.title}</span>
+                            </NavLink>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Categories Dropdown */}
+                <div className={`nav-dropdown ${location.pathname.startsWith('/categories') ? 'active' : ''}`}>
+                    <NavLink
+                        to="/categories"
+                        className={({ isActive }) =>
+                            isActive ? 'nav-item active' : 'nav-item'
+                        }
+                        onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                    >
+                        <span className="nav-icon">📂</span>
+                        <span className="nav-label">Categories</span>
+                        <span className={`dropdown-arrow ${isCategoriesOpen ? 'open' : ''}`}>▾</span>
+                    </NavLink>
+
+                    <div className={`dropdown-content ${isCategoriesOpen ? 'show' : ''}`}>
+                        {categories.map((category) => (
+                            <NavLink
+                                key={category._id}
+                                to={`/categories/${category._id}`}
+                                className="sub-nav-item"
+                            >
+                                <span className="nav-icon">🔹</span>
+                                <span className="nav-label">{category.title}</span>
+                            </NavLink>
+                        ))}
                     </div>
                 </div>
 

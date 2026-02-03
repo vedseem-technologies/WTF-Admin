@@ -4,6 +4,8 @@ import Sidebar from './components/common/Sidebar';
 import Header from './components/common/Header';
 import Dashboard from './pages/Dashboard';
 import OccasionDetail from './pages/OccasionDetail';
+import ServiceDetail from './pages/ServiceDetail';
+import CategoryDetail from './pages/CategoryDetail';
 
 import Occasions from './pages/Occasions';
 import Services from './pages/Services';
@@ -40,7 +42,9 @@ function App() {
                 <Route path="/occasions/:id" element={<OccasionDetail />} />
 
                 <Route path="/services" element={<Services />} />
+                <Route path="/services/:id" element={<ServiceDetail />} />
                 <Route path="/categories" element={<Categories />} />
+                <Route path="/categories/:id" element={<CategoryDetail />} />
                 <Route path="/menu/starter" element={<Starter />} />
                 <Route path="/menu/main-course" element={<MainCourse />} />
                 <Route path="/menu/dessert" element={<Dessert />} />
