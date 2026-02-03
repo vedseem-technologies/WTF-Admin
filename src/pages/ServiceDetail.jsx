@@ -25,26 +25,31 @@ const ServiceDetail = () => {
 
   // Load saved menu selections for this service
   useEffect(() => {
-    if (id && menuItems.length > 0) {
-      const savedSelection = getServiceMenuSelection(id);
+    const loadSelection = async () => {
+      if (id && menuItems.length > 0) {
+        setIsLoading(true);
+        const savedSelection = await getServiceMenuSelection(id);
 
-      // Convert saved IDs to full menu item objects
-      const starterItems = menuItems.filter(item => savedSelection.starters?.includes(item._id));
-      const mainCourseItems = menuItems.filter(item => savedSelection.mainCourses?.includes(item._id));
-      const dessertItems = menuItems.filter(item => savedSelection.desserts?.includes(item._id));
-      const breadRiceItems = menuItems.filter(item => savedSelection.breadRice?.includes(item._id));
+        if (savedSelection) {
+          const mapItems = (ids) => {
+            if (!ids) return [];
+            return menuItems.filter(item => ids.includes(item._id));
+          };
 
-      setSelectedStarters(starterItems);
-      setSelectedMainCourse(mainCourseItems);
-      setSelectedDesserts(dessertItems);
-      setSelectedBreadRice(breadRiceItems);
-      setIsLoading(false);
-    }
+          setSelectedStarters(mapItems(savedSelection.starters));
+          setSelectedMainCourse(mapItems(savedSelection.mainCourses));
+          setSelectedDesserts(mapItems(savedSelection.desserts));
+          setSelectedBreadRice(mapItems(savedSelection.breadRice));
+        }
+        setIsLoading(false);
+      }
+    };
+    loadSelection();
   }, [id, menuItems]);
 
   const allMenuItems = menuItems;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const menuSelection = {
       starters: selectedStarters.map(item => item._id),
       mainCourses: selectedMainCourse.map(item => item._id),
@@ -52,8 +57,12 @@ const ServiceDetail = () => {
       breadRice: selectedBreadRice.map(item => item._id)
     };
 
-    saveServiceMenuSelection(id, menuSelection);
-    alert(`Menu items saved successfully for ${service.title}!`);
+    try {
+      await saveServiceMenuSelection(id, menuSelection);
+      alert(`Menu selection saved successfully for ${service.title}!`);
+    } catch (error) {
+      alert("Failed to save menu selection.");
+    }
   };
 
   const totalSelected = selectedStarters.length + selectedMainCourse.length +

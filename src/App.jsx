@@ -6,7 +6,9 @@ import Dashboard from './pages/Dashboard';
 import OccasionDetail from './pages/OccasionDetail';
 import OccasionReport from './pages/OccasionReport';
 import ServiceDetail from './pages/ServiceDetail';
+
 import CategoryDetail from './pages/CategoryDetail';
+import PackageDetail from './pages/PackageDetail';
 
 import Occasions from './pages/Occasions';
 import Services from './pages/Services';
@@ -42,6 +44,7 @@ function App() {
                 <Route path="/occasions" element={<Occasions />} />
                 <Route path="/occasions/:id" element={<OccasionDetail />} />
                 <Route path="/occasions/:id/report" element={<OccasionReport />} />
+                <Route path="/packages/:id" element={<PackageDetail />} />
 
                 <Route path="/services" element={<Services />} />
                 <Route path="/services/:id" element={<ServiceDetail />} />

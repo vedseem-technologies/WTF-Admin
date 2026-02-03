@@ -56,7 +56,11 @@ const Occasions = () => {
             (filter === 'active' && occasion.active) ||
             (filter === 'inactive' && !occasion.active);
         return matchesSearch && matchesFilter;
-    }).sort((a, b) => (b.createdAt || b._id).localeCompare(a.createdAt || a._id)); // Sort by newest first
+    }).sort((a, b) => {
+        const dateA = new Date(a.createdAt || a._id ? parseInt(a._id.substring(0, 8), 16) * 1000 : 0).getTime();
+        const dateB = new Date(b.createdAt || b._id ? parseInt(b._id.substring(0, 8), 16) * 1000 : 0).getTime();
+        return dateB - dateA;
+    });
 
     return (
         <div className="page-container">
@@ -108,7 +112,7 @@ const Occasions = () => {
                             <div key={occasion._id} className={`occasion-card ${!occasion.active ? 'inactive' : ''}`}>
                                 <div className="occasion-image">
                                     <img
-                                        src={occasion.image}
+                                        src={getThumbnail(occasion.image)}
                                         alt={occasion.title}
                                         loading="lazy"
                                         referrerPolicy="no-referrer"

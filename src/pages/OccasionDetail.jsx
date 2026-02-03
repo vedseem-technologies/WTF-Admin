@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import '../components/common/MultiSelectDropdown.css';
 import './Occasions.css';
@@ -13,8 +13,12 @@ const MENU_CATEGORIES = {
 
 const OccasionDetail = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { occasions, menuItems, getOccasionMenuSelection, saveOccasionMenuSelection } = useData();
+  const {
+    occasions,
+    menuItems,
+    getOccasionMenuSelection,
+    saveOccasionMenuSelection
+  } = useData();
   const occasion = occasions.find(o => o._id === id);
 
   const [selectedStarters, setSelectedStarters] = useState([]);
@@ -22,7 +26,6 @@ const OccasionDetail = () => {
   const [selectedDesserts, setSelectedDesserts] = useState([]);
   const [selectedBreadRice, setSelectedBreadRice] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
 
   const [openDropdown, setOpenDropdown] = useState(null);
   const [searchTerms, setSearchTerms] = useState({
@@ -34,28 +37,32 @@ const OccasionDetail = () => {
 
   // Load saved menu selections for this occasion
   useEffect(() => {
-    if (id && menuItems.length > 0) {
-      const savedSelection = getOccasionMenuSelection(id);
+    const loadSelection = async () => {
+      if (id && menuItems.length > 0) {
+        setIsLoading(true);
+        const savedSelection = await getOccasionMenuSelection(id);
 
-      // Convert saved IDs to full menu item objects
-      const starterItems = menuItems.filter(item => savedSelection.starters?.includes(item._id));
-      const mainCourseItems = menuItems.filter(item => savedSelection.mainCourses?.includes(item._id));
-      const dessertItems = menuItems.filter(item => savedSelection.desserts?.includes(item._id));
-      const breadRiceItems = menuItems.filter(item => savedSelection.breadRice?.includes(item._id));
+        if (savedSelection) {
+          // Convert saved IDs to full menu item objects
+          const mapItems = (ids) => {
+            if (!ids) return [];
+            return menuItems.filter(item => ids.includes(item._id));
+          };
 
-      setSelectedStarters(starterItems);
-      setSelectedMainCourse(mainCourseItems);
-      setSelectedDesserts(dessertItems);
-      setSelectedBreadRice(breadRiceItems);
-      setIsLoading(false);
-    }
+          setSelectedStarters(mapItems(savedSelection.starters));
+          setSelectedMainCourse(mapItems(savedSelection.mainCourses));
+          setSelectedDesserts(mapItems(savedSelection.desserts));
+          setSelectedBreadRice(mapItems(savedSelection.breadRice));
+        }
+        setIsLoading(false);
+      }
+    };
+    loadSelection();
   }, [id, menuItems]);
 
-  // Filter menu items by category - REMOVED, now showing all items in each dropdown
-  // All dropdowns will show all menu items regardless of category
   const allMenuItems = menuItems;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const menuSelection = {
       starters: selectedStarters.map(item => item._id),
       mainCourses: selectedMainCourse.map(item => item._id),
@@ -63,8 +70,12 @@ const OccasionDetail = () => {
       breadRice: selectedBreadRice.map(item => item._id)
     };
 
-    saveOccasionMenuSelection(id, menuSelection);
-    alert(`Menu items saved successfully for ${occasion.title}!`);
+    try {
+      await saveOccasionMenuSelection(id, menuSelection);
+      alert(`Menu items saved successfully for ${occasion.title}!`);
+    } catch (error) {
+      alert("Failed to save menu selection.");
+    }
   };
 
   const totalSelected = selectedStarters.length + selectedMainCourse.length +
@@ -195,13 +206,13 @@ const OccasionDetail = () => {
       <div className="page-header">
         <div className="page-header-content">
           <h2 className="page-title-big">🎉 {occasion.title}</h2>
-          <p className="page-description">Select menu items for this occasion</p>
+          <p className="page-description">Manage menu items for this occasion</p>
         </div>
       </div>
 
       <div className="card" style={{ maxWidth: '900px', padding: '2rem' }}>
         <h3 className="page-subtitle" style={{ marginBottom: '24px' }}>
-          📋 Menu Selection
+          📋 Occasion General Menu Selection
         </h3>
 
         <div className="grid-2" style={{ gap: '1.5rem' }}>

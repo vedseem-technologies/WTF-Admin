@@ -7,7 +7,7 @@ const Sidebar = () => {
     const location = useLocation();
     const { occasions, packages, services, categories } = useData();
     const [sidebarSearch, setSidebarSearch] = useState('');
-    const [isMenuSummaryOpen, setIsMenuSummaryOpen] = useState(location.pathname.startsWith('/menu/'));
+
     const [isOccasionsOpen, setIsOccasionsOpen] = useState(location.pathname.startsWith('/occasions'));
     const [isServicesOpen, setIsServicesOpen] = useState(false);
     const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
@@ -25,12 +25,7 @@ const Sidebar = () => {
         { path: '/youtube', icon: '🎥', label: 'YouTube' },
     ];
 
-    const summaryCategories = [
-        { path: '/menu/starter', icon: '🥗', label: 'Starter' },
-        { path: '/menu/main-course', icon: '🍛', label: 'Main Course' },
-        { path: '/menu/dessert', icon: '🍰', label: 'Dessert' },
-        { path: '/menu/bread-rice', icon: '🍚', label: 'Rice and Bread' },
-    ];
+
 
     return (
         <aside className="sidebar">
@@ -186,31 +181,7 @@ const Sidebar = () => {
                     </NavLink>
                 ))}
 
-                <div className={`nav-dropdown ${location.pathname.startsWith('/menu/') ? 'active' : ''}`}>
-                    <div
-                        className="nav-item dropdown-toggle"
-                        onClick={() => setIsMenuSummaryOpen(!isMenuSummaryOpen)}
-                    >
-                        <span className="nav-icon">📋</span>
-                        <span className="nav-label">Menu Summary</span>
-                        <span className={`dropdown-arrow ${isMenuSummaryOpen ? 'open' : ''}`}>▾</span>
-                    </div>
 
-                    <div className={`dropdown-content ${isMenuSummaryOpen ? 'show' : ''}`}>
-                        {summaryCategories.map((subItem) => (
-                            <NavLink
-                                key={subItem.path}
-                                to={subItem.path}
-                                className={({ isActive }) =>
-                                    isActive ? 'sub-nav-item active' : 'sub-nav-item'
-                                }
-                            >
-                                <span className="nav-icon">{subItem.icon}</span>
-                                <span className="nav-label">{subItem.label}</span>
-                            </NavLink>
-                        ))}
-                    </div>
-                </div>
 
                 <NavLink
                     to="/orders"

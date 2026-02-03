@@ -744,59 +744,95 @@ export const DataProvider = ({ children }) => {
 
 
         // Occasion Menu Selections
-        occasionMenuSelections: {},
-
-        getOccasionMenuSelection: (occasionId) => {
-            const key = `occasion_menu_${occasionId}`;
-            const saved = localStorage.getItem(key);
-            return saved ? JSON.parse(saved) : {
-                starters: [],
-                mainCourses: [],
-                desserts: [],
-                breadRice: []
-            };
+        getOccasionMenuSelection: async (occasionId) => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/menu-selection/occasion/${occasionId}`);
+                console.log("Fetched occasion menu:", response.data);
+                return response.data;
+            } catch (error) {
+                console.error("Error fetching occasion menu selection:", error);
+                return { starters: [], mainCourses: [], desserts: [], breadRice: [] };
+            }
         },
 
-        saveOccasionMenuSelection: (occasionId, selection) => {
-            const key = `occasion_menu_${occasionId}`;
-            localStorage.setItem(key, JSON.stringify(selection));
-            console.log(`Menu selection saved for occasion ${occasionId}:`, selection);
+        saveOccasionMenuSelection: async (occasionId, selection) => {
+            try {
+                const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/menu-selection/occasion/${occasionId}`, selection);
+                console.log(`Menu selection saved for occasion ${occasionId}:`, response.data);
+                return response.data;
+            } catch (error) {
+                console.error("Error saving occasion menu selection:", error);
+                throw error;
+            }
         },
 
         // Service Menu Selections
-        getServiceMenuSelection: (serviceId) => {
-            const key = `service_menu_${serviceId}`;
-            const saved = localStorage.getItem(key);
-            return saved ? JSON.parse(saved) : {
-                starters: [],
-                mainCourses: [],
-                desserts: [],
-                breadRice: []
-            };
+        // Service Menu Selections
+        getServiceMenuSelection: async (serviceId) => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/menu-selection/service/${serviceId}`);
+                console.log("Fetched service menu:", response.data);
+                return response.data;
+            } catch (error) {
+                console.error("Error fetching service menu selection:", error);
+                return { starters: [], mainCourses: [], desserts: [], breadRice: [] };
+            }
         },
 
-        saveServiceMenuSelection: (serviceId, selection) => {
-            const key = `service_menu_${serviceId}`;
-            localStorage.setItem(key, JSON.stringify(selection));
-            console.log(`Menu selection saved for service ${serviceId}:`, selection);
+        saveServiceMenuSelection: async (serviceId, selection) => {
+            try {
+                const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/menu-selection/service/${serviceId}`, selection);
+                console.log(`Menu selection saved for service ${serviceId}:`, response.data);
+                return response.data;
+            } catch (error) {
+                console.error("Error saving service menu selection:", error);
+                throw error;
+            }
         },
 
         // Category Menu Selections
-        getCategoryMenuSelection: (categoryId) => {
-            const key = `category_menu_${categoryId}`;
-            const saved = localStorage.getItem(key);
-            return saved ? JSON.parse(saved) : {
-                starters: [],
-                mainCourses: [],
-                desserts: [],
-                breadRice: []
-            };
+        // Category Menu Selections
+        getCategoryMenuSelection: async (categoryId) => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/menu-selection/category/${categoryId}`);
+                console.log("Fetched category menu:", response.data);
+                return response.data;
+            } catch (error) {
+                console.error("Error fetching category menu selection:", error);
+                return { starters: [], mainCourses: [], desserts: [], breadRice: [] };
+            }
         },
 
-        saveCategoryMenuSelection: (categoryId, selection) => {
-            const key = `category_menu_${categoryId}`;
-            localStorage.setItem(key, JSON.stringify(selection));
-            console.log(`Menu selection saved for category ${categoryId}:`, selection);
+        saveCategoryMenuSelection: async (categoryId, selection) => {
+            try {
+                const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/menu-selection/category/${categoryId}`, selection);
+                console.log(`Menu selection saved for category ${categoryId}:`, response.data);
+                return response.data;
+            } catch (error) {
+                console.error("Error saving category menu selection:", error);
+                throw error;
+            }
+        },
+
+        // Package Menu Selections (API based)
+        getPackageMenuSelection: async (packageId) => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/package-menu/${packageId}/menu-selection`);
+                return response.data;
+            } catch (error) {
+                console.error("Error fetching package menu selection:", error);
+                return { starters: [], mainCourses: [], desserts: [], breadRice: [] };
+            }
+        },
+
+        savePackageMenuSelection: async (packageId, selection) => {
+            try {
+                const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/package-menu/${packageId}/menu-selection`, selection);
+                return response.data;
+            } catch (error) {
+                console.error("Error saving package menu selection:", error);
+                throw error;
+            }
         },
 
         getMenuItemById,

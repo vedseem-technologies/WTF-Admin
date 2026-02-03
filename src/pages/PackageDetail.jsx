@@ -4,10 +4,10 @@ import { useData } from '../context/DataContext';
 import '../components/common/MultiSelectDropdown.css';
 import './Occasions.css';
 
-const CategoryDetail = () => {
+const PackageDetail = () => {
   const { id } = useParams();
-  const { categories, menuItems, getCategoryMenuSelection, saveCategoryMenuSelection } = useData();
-  const category = categories.find(c => c._id === id);
+  const { packages, menuItems, getPackageMenuSelection, savePackageMenuSelection } = useData();
+  const pkg = packages.find(p => p._id === id);
 
   const [selectedStarters, setSelectedStarters] = useState([]);
   const [selectedMainCourse, setSelectedMainCourse] = useState([]);
@@ -23,14 +23,24 @@ const CategoryDetail = () => {
     breadRice: ''
   });
 
-  // Load saved menu selections for this category
+  // Load saved menu selections for this package
   useEffect(() => {
     const loadSelection = async () => {
       if (id && menuItems.length > 0) {
         setIsLoading(true);
-        const savedSelection = await getCategoryMenuSelection(id);
+        const savedSelection = await getPackageMenuSelection(id);
 
         if (savedSelection) {
+          // Convert saved IDs to full menu item objects
+          // Note: The API might return IDs (if minimal) or objects (if populated).
+          // Based on service logic "starters: data.starters || []", these are likely IDs stored in DB.
+          // But the GET endpoint "getSelectionByPackageId" might not populate by default unless specified.
+          // However main service "packages" populated selectedItems before.
+          // Let's assume the new API returns IDs or objects. We should handle both.
+          // Currently my backend service returns .lean() without populate on fields other than packageId?
+          // Wait, schema "ref: 'MenuItem'". I didn't add .populate() in service "getSelectionByPackageId".
+          // So it returns IDs.
+
           const mapItems = (ids) => {
             if (!ids) return [];
             return menuItems.filter(item => ids.includes(item._id));
@@ -58,8 +68,8 @@ const CategoryDetail = () => {
     };
 
     try {
-      await saveCategoryMenuSelection(id, menuSelection);
-      alert(`Menu items saved successfully for ${category.title}!`);
+      await savePackageMenuSelection(id, menuSelection);
+      alert(`Menu selection saved successfully for ${pkg.packageName}!`);
     } catch (error) {
       alert("Failed to save menu selection.");
     }
@@ -68,17 +78,19 @@ const CategoryDetail = () => {
   const totalSelected = selectedStarters.length + selectedMainCourse.length +
     selectedDesserts.length + selectedBreadRice.length;
 
-  if (!category) {
+  if (!pkg) {
     return (
       <div className="page-container">
         <div className="loading-state">
-          <h3>Category not found</h3>
+          <h3>Package not found</h3>
         </div>
       </div>
     );
   }
 
-  // Reusable dropdown component
+  // Reuse MenuDropdown component (local definition or import if extracted)
+  // Since it was defined in OccasionDetail locally, I will redefine it here for simplicity 
+  // or I could have extracted it. Given the constraints, I'll copy-paste the local component logic to ensure it works isolated.
   const MenuDropdown = ({
     label,
     selected,
@@ -117,7 +129,7 @@ const CategoryDetail = () => {
     };
 
     const filteredOptions = options.filter((item) =>
-      (item.name || item.title).toLowerCase().includes(searchTerm.toLowerCase())
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -133,7 +145,7 @@ const CategoryDetail = () => {
           ) : (
             selected.map((item) => (
               <span key={item._id} className="ms-chip">
-                {item.name || item.title}
+                {item.name}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -173,7 +185,7 @@ const CategoryDetail = () => {
                       className="ms-option"
                       onClick={() => toggleItem(item)}
                     >
-                      <span>{item.name || item.title}</span>
+                      <span>{item.name}</span>
                       <input type="checkbox" checked={checked} readOnly />
                     </div>
                   );
@@ -192,92 +204,98 @@ const CategoryDetail = () => {
     <div className="page-container">
       <div className="page-header">
         <div className="page-header-content">
-          <h2 className="page-title-big">📂 {category.title}</h2>
-          <p className="page-description">Select menu items for this category</p>
+          <h2 className="page-title-big">📦 {pkg.packageName}</h2>
+          <p className="page-description">Customize menu for this package (Steps: Occasion → Package → Menu)</p>
         </div>
       </div>
 
       <div className="card" style={{ maxWidth: '900px', padding: '2rem' }}>
         <h3 className="page-subtitle" style={{ marginBottom: '24px' }}>
-          📋 Menu Selection
+          📋 Package Menu Selection
         </h3>
 
-        <div className="grid-2" style={{ gap: '1.5rem' }}>
-          <MenuDropdown
-            label="Starters"
-            icon="🥗"
-            selected={selectedStarters}
-            setSelected={setSelectedStarters}
-            options={allMenuItems}
-            categoryKey="starter"
-          />
+        {isLoading ? (
+          <div>Loading menu selection...</div>
+        ) : (
+          <>
+            <div className="grid-2" style={{ gap: '1.5rem' }}>
+              <MenuDropdown
+                label="Starters"
+                icon="🥗"
+                selected={selectedStarters}
+                setSelected={setSelectedStarters}
+                options={allMenuItems}
+                categoryKey="starter"
+              />
 
-          <MenuDropdown
-            label="Main Course"
-            icon="🍛"
-            selected={selectedMainCourse}
-            setSelected={setSelectedMainCourse}
-            options={allMenuItems}
-            categoryKey="mainCourse"
-          />
+              <MenuDropdown
+                label="Main Course"
+                icon="🍛"
+                selected={selectedMainCourse}
+                setSelected={setSelectedMainCourse}
+                options={allMenuItems}
+                categoryKey="mainCourse"
+              />
 
-          <MenuDropdown
-            label="Desserts"
-            icon="🍰"
-            selected={selectedDesserts}
-            setSelected={setSelectedDesserts}
-            options={allMenuItems}
-            categoryKey="dessert"
-          />
+              <MenuDropdown
+                label="Desserts"
+                icon="🍰"
+                selected={selectedDesserts}
+                setSelected={setSelectedDesserts}
+                options={allMenuItems}
+                categoryKey="dessert"
+              />
 
-          <MenuDropdown
-            label="Rice & Bread"
-            icon="🍚"
-            selected={selectedBreadRice}
-            setSelected={setSelectedBreadRice}
-            options={allMenuItems}
-            categoryKey="breadRice"
-          />
-        </div>
-
-        {/* Summary Section */}
-        {totalSelected > 0 && (
-          <div className="alert alert-info" style={{ marginTop: '24px' }}>
-            <strong>Total: {totalSelected} item(s) selected</strong>
-            <div style={{ fontSize: '0.875rem', marginTop: '8px', color: 'var(--info)' }}>
-              Starters: {selectedStarters.length} |
-              Main Course: {selectedMainCourse.length} |
-              Desserts: {selectedDesserts.length} |
-              Rice & Bread: {selectedBreadRice.length}
+              <MenuDropdown
+                label="Rice & Bread"
+                icon="🍚"
+                selected={selectedBreadRice}
+                setSelected={setSelectedBreadRice}
+                options={allMenuItems}
+                categoryKey="breadRice"
+              />
             </div>
-          </div>
-        )}
 
-        {/* Save Button */}
-        <div style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button
-            className="btn btn-outline"
-            onClick={() => {
-              setSelectedStarters([]);
-              setSelectedMainCourse([]);
-              setSelectedDesserts([]);
-              setSelectedBreadRice([]);
-            }}
-            disabled={totalSelected === 0}
-          >
-            Clear All
-          </button>
-          <button
-            className="btn btn-primary"
-            onClick={handleSave}
-            disabled={totalSelected === 0}
-          >
-            💾 Save Menu Selection
-          </button>
-        </div>
+            {/* Summary Section */}
+            {totalSelected > 0 && (
+              <div className="alert alert-info" style={{ marginTop: '24px' }}>
+                <strong>Total: {totalSelected} item(s) selected</strong>
+                <div style={{ fontSize: '0.875rem', marginTop: '8px', color: 'var(--info)' }}>
+                  Starters: {selectedStarters.length} |
+                  Main Course: {selectedMainCourse.length} |
+                  Desserts: {selectedDesserts.length} |
+                  Rice & Bread: {selectedBreadRice.length}
+                </div>
+              </div>
+            )}
+
+            {/* Save Button */}
+            <div style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                className="btn btn-outline"
+                onClick={() => {
+                  setSelectedStarters([]);
+                  setSelectedMainCourse([]);
+                  setSelectedDesserts([]);
+                  setSelectedBreadRice([]);
+                }}
+                disabled={totalSelected === 0}
+              >
+                Clear All
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSave}
+                disabled={totalSelected === 0}
+              >
+                💾 Save Package Menu
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 };
 
-export default CategoryDetail;
+export default PackageDetail;
