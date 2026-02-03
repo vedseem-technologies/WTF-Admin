@@ -242,65 +242,21 @@ const OccasionDetail = () => {
           />
         </div>
 
-        {/* Summary & Report Section */}
+        {/* Summary Section */}
         {totalSelected > 0 && (
-          <div style={{ marginTop: '32px', borderTop: '2px solid var(--border)', paddingTop: '24px' }}>
-            <h3 className="page-subtitle">📊 Selection Summary</h3>
-
-            <div className="alert alert-info" style={{ marginBottom: '24px' }}>
-              <strong>Total Items: {totalSelected}</strong>
-            </div>
-
-            <div className="report-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-              {selectedStarters.length > 0 && (
-                <div className="report-column">
-                  <h4 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--primary)' }}>🥗 Starters ({selectedStarters.length})</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    {selectedStarters.map(item => (
-                      <li key={item._id} style={{ marginBottom: '4px', fontSize: '0.9rem' }}>{item.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {selectedMainCourse.length > 0 && (
-                <div className="report-column">
-                  <h4 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--primary)' }}>🍛 Main Course ({selectedMainCourse.length})</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    {selectedMainCourse.map(item => (
-                      <li key={item._id} style={{ marginBottom: '4px', fontSize: '0.9rem' }}>{item.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {selectedDesserts.length > 0 && (
-                <div className="report-column">
-                  <h4 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--primary)' }}>🍰 Desserts ({selectedDesserts.length})</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    {selectedDesserts.map(item => (
-                      <li key={item._id} style={{ marginBottom: '4px', fontSize: '0.9rem' }}>{item.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {selectedBreadRice.length > 0 && (
-                <div className="report-column">
-                  <h4 style={{ fontSize: '1rem', marginBottom: '10px', color: 'var(--primary)' }}>🍚 Rice & Bread ({selectedBreadRice.length})</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    {selectedBreadRice.map(item => (
-                      <li key={item._id} style={{ marginBottom: '4px', fontSize: '0.9rem' }}>{item.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+          <div className="alert alert-info" style={{ marginTop: '24px' }}>
+            <strong>Total: {totalSelected} item(s) selected</strong>
+            <div style={{ fontSize: '0.875rem', marginTop: '8px', color: 'var(--info)' }}>
+              Starters: {selectedStarters.length} |
+              Main Course: {selectedMainCourse.length} |
+              Desserts: {selectedDesserts.length} |
+              Rice & Bread: {selectedBreadRice.length}
             </div>
           </div>
         )}
 
         {/* Save Button */}
-        <div style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+        <div style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           <button
             className="btn btn-outline"
             onClick={() => {
