@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useData } from '../context/DataContext';
+import { getThumbnail } from '../utils/imageOptimizer';
 import '../pages/Starter.css';
 
 const BreadRice = () => {
@@ -62,7 +63,7 @@ const BreadRice = () => {
                                     <tr key={item.id}>
                                         <td>
                                             <div className="item-image-cell">
-                                                <img src={item.image} alt={item.name} />
+                                                <img src={getThumbnail(item.image)} alt={item.name} loading="lazy" />
                                             </div>
                                         </td>
                                         <td className="item-name">{item.name}</td>
@@ -109,7 +110,7 @@ const BreadRice = () => {
                                     ×
                                 </button>
                                 <div className="card-image">
-                                    <img src={item.image} alt={item.name} />
+                                    <img src={getThumbnail(item.image)} alt={item.name} loading="lazy" />
                                 </div>
                                 <div className="card-info">
                                     <h4>{item.name}</h4>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useData } from '../context/DataContext';
 import Modal from '../components/common/Modal';
 import ImageUpload from '../components/common/ImageUpload';
+import { getThumbnail } from '../utils/imageOptimizer';
 import './PopularItems.css';
 
 const PopularItems = () => {
@@ -64,7 +65,7 @@ const PopularItems = () => {
     const filteredItems = popularItems.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.description.toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a, b) => (b.createdAt || b._id).localeCompare(a.createdAt || a._id)); 
+    ).sort((a, b) => (b.createdAt || b._id).localeCompare(a.createdAt || a._id));
 
     const renderStars = (rating) => {
         return '⭐'.repeat(rating);
@@ -113,8 +114,9 @@ const PopularItems = () => {
                                 <td>
                                     <div className="item-image-cell">
                                         <img
-                                            src={item.image}
+                                            src={getThumbnail(item.image)}
                                             alt={item.name}
+                                            loading="lazy"
                                             referrerPolicy="no-referrer"
                                             crossOrigin="anonymous"
                                         />

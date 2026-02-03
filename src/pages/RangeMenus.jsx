@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useData } from '../context/DataContext';
 import Modal from '../components/common/Modal';
 import ImageUpload from '../components/common/ImageUpload';
+import { getThumbnail } from '../utils/imageOptimizer';
 import './RangeMenus.css';
 
 const MENU_RANGES = [
@@ -17,7 +18,6 @@ const RangeMenus = () => {
     const [formData, setFormData] = useState({
         name: '',
         image: '',
-        price: '',
         rating: '',
         range: MENU_RANGES[0]
     });
@@ -29,7 +29,6 @@ const RangeMenus = () => {
             setFormData({
                 name: menu.name,
                 image: menu.image,
-                price: menu.price,
                 rating: menu.rating,
                 range: menu.range
             });
@@ -38,7 +37,6 @@ const RangeMenus = () => {
             setFormData({
                 name: '',
                 image: '',
-                price: '',
                 rating: '',
                 range: MENU_RANGES[0]
             });
@@ -108,7 +106,6 @@ const RangeMenus = () => {
                                 <th>Image</th>
                                 <th>Name</th>
                                 <th>Range</th>
-                                <th>Price</th>
                                 <th>Rating</th>
                                 <th>Actions</th>
                             </tr>
@@ -119,8 +116,9 @@ const RangeMenus = () => {
                                     <td>
                                         <div className="menu-image-cell">
                                             <img
-                                                src={menu.image}
+                                                src={getThumbnail(menu.image)}
                                                 alt={menu.name}
+                                                loading="lazy"
                                                 referrerPolicy="no-referrer"
                                                 crossOrigin="anonymous"
                                             />
@@ -130,7 +128,6 @@ const RangeMenus = () => {
                                     <td>
                                         <span className="range-badge">{menu.range}</span>
                                     </td>
-                                    <td className="menu-price">₹{menu.price}</td>
                                     <td>
                                         <span className="rating-display">{menu.rating} ⭐</span>
                                     </td>
@@ -189,36 +186,21 @@ const RangeMenus = () => {
                         />
                     </div>
 
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label className="form-label">Price (₹) *</label>
+                    <div className="form-group">
+                        <label className="form-label">Rating *</label>
+                        <div className="rating-input-wrapper">
                             <input
                                 type="number"
-                                className="form-control"
-                                placeholder="e.g., 250"
-                                value={formData.price}
-                                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                                className="form-control rating-input"
+                                placeholder="0.0"
+                                value={formData.rating}
+                                onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) })}
                                 required
                                 min="0"
+                                max="5"
+                                step="0.1"
                             />
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Rating *</label>
-                            <div className="rating-input-wrapper">
-                                <input
-                                    type="number"
-                                    className="form-control rating-input"
-                                    placeholder="0.0"
-                                    value={formData.rating}
-                                    onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) })}
-                                    required
-                                    min="0"
-                                    max="5"
-                                    step="0.1"
-                                />
-                                <span className="rating-star">⭐</span>
-                            </div>
+                            <span className="rating-star">⭐</span>
                         </div>
                     </div>
 
@@ -246,7 +228,7 @@ const RangeMenus = () => {
                     </div>
                 </form>
             </Modal>
-        </div>
+        </div >
     );
 };
 

@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import Modal from '../components/common/Modal';
 import Toggle from '../components/common/Toggle';
 import ImageUpload from '../components/common/ImageUpload';
+import { getThumbnail } from '../utils/imageOptimizer';
 import './Occasions.css';
 
 const Occasions = () => {
@@ -101,58 +102,59 @@ const Occasions = () => {
             </div>
 
             {
-            filteredOccasions.length > 0 ? (
-                <div className="occasions-grid">
-                    {filteredOccasions.map((occasion) => (
-                        <div key={occasion._id} className={`occasion-card ${!occasion.active ? 'inactive' : ''}`}>
-                            <div className="occasion-image">
-                                <img
-                                    src={occasion.image}
-                                    alt={occasion.title}
-                                    referrerPolicy="no-referrer"
-                                    crossOrigin="anonymous"
-                                />
-                                {!occasion.active && <div className="inactive-overlay">Inactive</div>}
-                            </div>
-                            <div className="occasion-content">
-                                <h3 className="occasion-title">{occasion.title}</h3>
-                                <div className="occasion-actions">
-                                    <div className="occasion-toggle">
-                                        <span className="toggle-label">Active</span>
-                                        <Toggle
-                                            checked={occasion.active}
-                                            onChange={() => toggleOccasionActive(occasion._id)}
-                                        />
-                                    </div>
-                                    <div className="occasion-buttons">
-                                        <button
-                                            className="btn btn-sm btn-outline"
-                                            onClick={() => handleOpenModal(occasion)}
-                                        >
-                                            ✏️ Edit
-                                        </button>
-                                        <button
-                                            className="btn btn-sm btn-danger"
-                                            onClick={() => handleDelete(occasion._id)}
-                                        >
-                                            🗑️ Delete
-                                        </button>
+                filteredOccasions.length > 0 ? (
+                    <div className="occasions-grid">
+                        {filteredOccasions.map((occasion) => (
+                            <div key={occasion._id} className={`occasion-card ${!occasion.active ? 'inactive' : ''}`}>
+                                <div className="occasion-image">
+                                    <img
+                                        src={occasion.image}
+                                        alt={occasion.title}
+                                        loading="lazy"
+                                        referrerPolicy="no-referrer"
+                                        crossOrigin="anonymous"
+                                    />
+                                    {!occasion.active && <div className="inactive-overlay">Inactive</div>}
+                                </div>
+                                <div className="occasion-content">
+                                    <h3 className="occasion-title">{occasion.title}</h3>
+                                    <div className="occasion-actions">
+                                        <div className="occasion-toggle">
+                                            <span className="toggle-label">Active</span>
+                                            <Toggle
+                                                checked={occasion.active}
+                                                onChange={() => toggleOccasionActive(occasion._id)}
+                                            />
+                                        </div>
+                                        <div className="occasion-buttons">
+                                            <button
+                                                className="btn btn-sm btn-outline"
+                                                onClick={() => handleOpenModal(occasion)}
+                                            >
+                                                ✏️ Edit
+                                            </button>
+                                            <button
+                                                className="btn btn-sm btn-danger"
+                                                onClick={() => handleDelete(occasion._id)}
+                                            >
+                                                🗑️ Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        ))}
+                    </div>
+                )
+                    :
+                    (
+                        <div className="empty-state">
+                            <span className="empty-icon">🎉</span>
+                            <h3>No occasions found</h3>
+                            <p>Try adjusting your search or filter criteria</p>
                         </div>
-                    ))}
-                </div>
-            )  
-             : 
-                (
-                <div className="empty-state">
-                    <span className="empty-icon">🎉</span>
-                    <h3>No occasions found</h3>
-                    <p>Try adjusting your search or filter criteria</p>
-                </div>
-            )
-        
+                    )
+
             }
 
             <Modal

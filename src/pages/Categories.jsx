@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import Modal from '../components/common/Modal';
 import Toggle from '../components/common/Toggle';
 import ImageUpload from '../components/common/ImageUpload';
+import { getThumbnail } from '../utils/imageOptimizer';
 import './Occasions.css'; // Reusing same styles
 
 const Categories = () => {
@@ -109,8 +110,9 @@ const Categories = () => {
                         <div key={category._id} className={`occasion-card ${!category.active ? 'inactive' : ''}`}>
                             <div className="occasion-image">
                                 <img
-                                    src={category.image}
+                                    src={getThumbnail(category.image)}
                                     alt={category.title}
+                                    loading="lazy"
                                     referrerPolicy="no-referrer"
                                     crossOrigin="anonymous"
                                 />

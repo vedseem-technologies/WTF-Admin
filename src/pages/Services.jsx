@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import Modal from '../components/common/Modal';
 import Toggle from '../components/common/Toggle';
 import ImageUpload from '../components/common/ImageUpload';
+import { getThumbnail } from '../utils/imageOptimizer';
 import './Occasions.css'; // Reusing same styles
 
 const Services = () => {
@@ -105,8 +106,9 @@ const Services = () => {
                         <div key={service._id} className={`occasion-card ${!service.active ? 'inactive' : ''}`}>
                             <div className="occasion-image">
                                 <img
-                                    src={service.image}
+                                    src={getThumbnail(service.image)}
                                     alt={service.title}
+                                    loading="lazy"
                                     referrerPolicy="no-referrer"
                                     crossOrigin="anonymous"
                                 />

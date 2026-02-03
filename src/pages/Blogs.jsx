@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useData } from '../context/DataContext';
 import Modal from '../components/common/Modal';
 import ImageUpload from '../components/common/ImageUpload';
+import { getThumbnail } from '../utils/imageOptimizer';
 import './Blogs.css';
 
 const BLOG_TYPES = [
@@ -76,7 +77,7 @@ const Blogs = () => {
     ).sort((a, b) => {
         const dateDiff = new Date(b.date) - new Date(a.date);
         if (dateDiff !== 0) return dateDiff;
-        return b._id.localeCompare(a._id); 
+        return b._id.localeCompare(a._id);
     });
 
     return (
@@ -121,8 +122,9 @@ const Blogs = () => {
                                 <td>
                                     <div className="blog-image-cell">
                                         <img
-                                            src={blog.image}
+                                            src={getThumbnail(blog.image)}
                                             alt={blog.title}
+                                            loading="lazy"
                                             referrerPolicy="no-referrer"
                                             crossOrigin="anonymous"
                                         />

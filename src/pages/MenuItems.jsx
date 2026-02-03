@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import Modal from '../components/common/Modal';
 import Toggle from '../components/common/Toggle';
 import ImageUpload from '../components/common/ImageUpload';
+import { getThumbnail } from '../utils/imageOptimizer';
 import './MenuItems.css';
 
 const MENU_CATEGORIES = [
@@ -23,11 +24,12 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
         name: '',
         image: '',
         type: 'Veg',
-        price: '',
-        category: '',
+        category: categoryId || MENU_CATEGORIES[0].id,
         active: true,
         people: 20,
-        portionSize: ''
+        quantity: 0,
+        measurement: 'kg',
+        unitPrice: 0
     });
 
     const [bulkData, setBulkData] = useState('');
@@ -43,11 +45,12 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                 name: item.name,
                 image: item.image,
                 type: item.type,
-                price: item.price,
                 category: item.category,
                 active: item.active,
                 people: item.people,
-                portionSize: item.portionSize
+                quantity: item.quantity,
+                measurement: item.measurement,
+                unitPrice: item.unitPrice
             });
         } else {
             setEditingItem(null);
@@ -55,11 +58,12 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                 name: '',
                 image: '',
                 type: 'Veg',
-                price: '',
                 category: categoryId || MENU_CATEGORIES[0].id,
                 active: true,
                 people: 20,
-                portionSize: ''
+                quantity: 0,
+                measurement: 'kg',
+                unitPrice: 0
             });
         }
         setIsModalOpen(true);
@@ -93,13 +97,14 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
 
         const lines = bulkData.trim().split('\n');
         const items = lines.map(line => {
-            const [name, catId, type, price, portionSize] = line.split(',').map(s => s.trim());
+            const [name, catId, type, quantity, measurement, unitPrice] = line.split(',').map(s => s.trim());
             return {
                 name,
                 category: parseInt(catId) || categoryId || MENU_CATEGORIES[0].id,
                 type: type || 'Veg',
-                price: parseFloat(price) || 0,
-                portionSize: portionSize || '100g',
+                quantity: parseFloat(quantity) || 1,
+                measurement: measurement || 'kg',
+                unitPrice: parseFloat(unitPrice) || 0,
                 image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
                 active: true,
                 people: 20
@@ -170,8 +175,9 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                                 <th>Image</th>
                                 <th>Item Name</th>
                                 <th>Type</th>
-                                <th>Price</th>
-                                <th>Portion</th>
+                                <th>Quantity</th>
+                                <th>Measurement</th>
+                                <th>Unit Price</th>
                                 <th>People</th>
                                 <th>Active</th>
                                 <th>Actions</th>
@@ -183,8 +189,9 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                                     <td>
                                         <div className="item-image">
                                             <img
-                                                src={item.image}
+                                                src={getThumbnail(item.image)}
                                                 alt={item.name}
+                                                loading="lazy"
                                                 referrerPolicy="no-referrer"
                                                 crossOrigin="anonymous"
                                             />
@@ -196,8 +203,9 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                                             {item.type}
                                         </span>
                                     </td>
-                                    <td className="font-semibold">{formatCurrency(item.price)}</td>
-                                    <td>{item.portionSize}</td>
+                                    <td>{item.quantity}</td>
+                                    <td>{item.measurement}</td>
+                                    <td>{formatCurrency(item.unitPrice)}</td>
                                     <td>{item.people}</td>
                                     <td>
                                         <Toggle
@@ -253,19 +261,6 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                                 required
                             />
                         </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Price (₹) *</label>
-                            <input
-                                type="number"
-                                className="form-control"
-                                placeholder="e.g., 180"
-                                value={formData.price}
-                                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                                required
-                                min="0"
-                            />
-                        </div>
                     </div>
 
                     <div className="form-row">
@@ -287,16 +282,47 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label className="form-label">Portion Size *</label>
+                            <label className="form-label">Quantity *</label>
                             <input
-                                type="text"
+                                type="number"
                                 className="form-control"
-                                placeholder="e.g., 120g, 1 pc, Per counter"
-                                value={formData.portionSize}
-                                onChange={(e) => setFormData({ ...formData, portionSize: e.target.value })}
+                                placeholder="e.g., 100"
+                                value={formData.quantity}
+                                onChange={(e) => setFormData({ ...formData, quantity: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
                                 required
+                                min="0"
+                                step="0.01"
                             />
                         </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Measurement *</label>
+                            <select
+                                className="form-select"
+                                value={formData.measurement}
+                                onChange={(e) => setFormData({ ...formData, measurement: e.target.value })}
+                                required
+                            >
+                                <option value="kg">kg</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Unit Price (₹) *</label>
+                            <input
+                                type="number"
+                                className="form-control"
+                                placeholder="e.g., 150"
+                                value={formData.unitPrice}
+                                onChange={(e) => setFormData({ ...formData, unitPrice: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                                required
+                                min="0"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-row">
 
                         <div className="form-group">
                             <label className="form-label">Serves (People) *</label>
@@ -305,7 +331,7 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                                 className="form-control"
                                 placeholder="e.g., 20"
                                 value={formData.people}
-                                onChange={(e) => setFormData({ ...formData, people: parseInt(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, people: e.target.value === '' ? 1 : parseInt(e.target.value) })}
                                 required
                                 min="1"
                             />
@@ -355,17 +381,17 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                             className="form-textarea"
                             style={{ minHeight: '300px' }}
                             placeholder="Enter items in CSV format (one per line):
-Name, CategoryID, Type, Price, PortionSize
+Name, CategoryID, Type, Quantity, Measurement, UnitPrice
 
 Example:
-Dal Makhani, 2, Veg, 150, 200g
-Chicken Tikka, 1, Non-Veg, 200, 150g
-Jeera Rice, 3, Veg, 80, 200g"
+Dal Makhani, 2, Veg, 200, kg, 120
+Chicken Tikka, 1, Non-Veg, 150, pcs, 180
+Jeera Rice, 3, Veg, 200, kg, 60"
                             value={bulkData}
                             onChange={(e) => setBulkData(e.target.value)}
                             required
                         />
-                        <p className="form-help">Format: Name, CategoryID, Type (Veg/Non-Veg), Price, PortionSize</p>
+                        <p className="form-help">Format: Name, CategoryID, Type (Veg/Non-Veg), Quantity, Measurement (kg/pcs), UnitPrice</p>
                         <p className="form-help">Category IDs: {MENU_CATEGORIES.map(c => `${c.id}=${c.name}`).join(', ')}</p>
                     </div>
 

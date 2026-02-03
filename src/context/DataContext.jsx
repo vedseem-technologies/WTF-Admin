@@ -175,19 +175,26 @@ export const DataProvider = ({ children }) => {
 
 
     const addMenuItem = async (menuItem) => {
+        const tempId = `temp-${Date.now()}`;
+        const optimisticItem = { ...menuItem, _id: tempId, createdAt: new Date() };
+
+        setMenuItems([optimisticItem, ...menuItems]);
+
         try {
             const imageUrl = await handleImageUpload(menuItem.image);
             const itemWithUrl = { ...menuItem, image: imageUrl };
             const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/menu-items`, itemWithUrl);
-            setMenuItems([response.data, ...menuItems]);
+
+            setMenuItems(prev => prev.map(item => item._id === tempId ? response.data : item));
         } catch (error) {
+            setMenuItems(prev => prev.filter(item => item._id !== tempId));
             console.error("Error adding menu item:", error);
+            alert("Failed to add menu item. Please try again.");
         }
     };
 
     const addBulkMenuItems = async (items) => {
         try {
-            // Process images if needed (assuming simple URLs for bulk for now)
             const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/menu-items/bulk`, items);
             setMenuItems([...response.data, ...menuItems]);
         } catch (error) {
@@ -196,6 +203,10 @@ export const DataProvider = ({ children }) => {
     };
 
     const updateMenuItem = async (id, updatedMenuItem) => {
+        const originalItems = [...menuItems];
+
+        setMenuItems(menuItems.map(mi => mi._id === id ? { ...mi, ...updatedMenuItem } : mi));
+
         try {
             let imageUrl = updatedMenuItem.image;
             if (updatedMenuItem.image && updatedMenuItem.image.startsWith('data:image')) {
@@ -203,9 +214,11 @@ export const DataProvider = ({ children }) => {
             }
             const itemWithUrl = { ...updatedMenuItem, image: imageUrl };
             const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/menu-items/${id}`, itemWithUrl);
-            setMenuItems(menuItems.map(mi => mi._id === id ? response.data : mi));
+            setMenuItems(prev => prev.map(mi => mi._id === id ? response.data : mi));
         } catch (error) {
+            setMenuItems(originalItems);
             console.error("Error updating menu item:", error);
+            alert("Failed to update menu item. Please try again.");
         }
     };
 
@@ -298,16 +311,27 @@ export const DataProvider = ({ children }) => {
         // Occasions
         loadingOccasions,
         addOccasion: async (occasion) => {
+            const tempId = `temp-${Date.now()}`;
+            const optimisticOccasion = { ...occasion, _id: tempId, createdAt: new Date() };
+
+            setOccasions([optimisticOccasion, ...occasions]);
+
             try {
                 const imageUrl = await handleImageUpload(occasion.image);
                 const occasionWithUrl = { ...occasion, image: imageUrl };
                 const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/occasions`, occasionWithUrl);
-                setOccasions([...occasions, response.data]);
+                setOccasions(prev => prev.map(o => o._id === tempId ? response.data : o));
             } catch (error) {
+                setOccasions(prev => prev.filter(o => o._id !== tempId));
                 console.error("Error adding occasion:", error);
+                alert("Failed to add occasion. Please try again.");
             }
         },
         updateOccasion: async (id, updatedData) => {
+            const originalOccasions = [...occasions];
+
+            setOccasions(occasions.map(o => o._id === id ? { ...o, ...updatedData } : o));
+
             try {
                 let imageUrl = updatedData.image;
                 if (updatedData.image && updatedData.image.startsWith('data:image')) {
@@ -315,9 +339,11 @@ export const DataProvider = ({ children }) => {
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
                 const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/occasions/${id}`, dataWithUrl);
-                setOccasions(occasions.map(o => o._id === id ? response.data : o));
+                setOccasions(prev => prev.map(o => o._id === id ? response.data : o));
             } catch (error) {
+                setOccasions(originalOccasions);
                 console.error("Error updating occasion:", error);
+                alert("Failed to update occasion. Please try again.");
             }
         },
         deleteOccasion: async (id) => {
@@ -346,16 +372,27 @@ export const DataProvider = ({ children }) => {
         // Services
         loadingServices,
         addService: async (service) => {
+            const tempId = `temp-${Date.now()}`;
+            const optimisticService = { ...service, _id: tempId, createdAt: new Date() };
+
+            setServices([optimisticService, ...services]);
+
             try {
                 const imageUrl = await handleImageUpload(service.image);
                 const serviceWithUrl = { ...service, image: imageUrl };
                 const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/services`, serviceWithUrl);
-                setServices([...services, response.data]);
+                setServices(prev => prev.map(s => s._id === tempId ? response.data : s));
             } catch (error) {
+                setServices(prev => prev.filter(s => s._id !== tempId));
                 console.error("Error adding service:", error);
+                alert("Failed to add service. Please try again.");
             }
         },
         updateService: async (id, updatedData) => {
+            const originalServices = [...services];
+
+            setServices(services.map(s => s._id === id ? { ...s, ...updatedData } : s));
+
             try {
                 let imageUrl = updatedData.image;
                 if (updatedData.image && updatedData.image.startsWith('data:image')) {
@@ -363,9 +400,11 @@ export const DataProvider = ({ children }) => {
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
                 const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`, dataWithUrl);
-                setServices(services.map(s => s._id === id ? response.data : s));
+                setServices(prev => prev.map(s => s._id === id ? response.data : s));
             } catch (error) {
+                setServices(originalServices);
                 console.error("Error updating service:", error);
+                alert("Failed to update service. Please try again.");
             }
         },
         deleteService: async (id) => {
@@ -389,16 +428,27 @@ export const DataProvider = ({ children }) => {
         },
 
         addCategory: async (category) => {
+            const tempId = `temp-${Date.now()}`;
+            const optimisticCategory = { ...category, _id: tempId, createdAt: new Date() };
+
+            setCategories([optimisticCategory, ...categories]);
+
             try {
                 const imageUrl = await handleImageUpload(category.image);
                 const categoryWithUrl = { ...category, image: imageUrl };
                 const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/categories`, categoryWithUrl);
-                setCategories([...categories, response.data]);
+                setCategories(prev => prev.map(c => c._id === tempId ? response.data : c));
             } catch (error) {
+                setCategories(prev => prev.filter(c => c._id !== tempId));
                 console.error("Error adding category:", error);
+                alert("Failed to add category. Please try again.");
             }
         },
         updateCategory: async (id, updatedData) => {
+            const originalCategories = [...categories];
+
+            setCategories(categories.map(c => c._id === id ? { ...c, ...updatedData } : c));
+
             try {
                 let imageUrl = updatedData.image;
                 if (updatedData.image && updatedData.image.startsWith('data:image')) {
@@ -406,9 +456,11 @@ export const DataProvider = ({ children }) => {
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
                 const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}`, dataWithUrl);
-                setCategories(categories.map(c => c._id === id ? response.data : c));
+                setCategories(prev => prev.map(c => c._id === id ? response.data : c));
             } catch (error) {
+                setCategories(originalCategories);
                 console.error("Error updating category:", error);
+                alert("Failed to update category. Please try again.");
             }
         },
         deleteCategory: async (id) => {
@@ -446,16 +498,27 @@ export const DataProvider = ({ children }) => {
         blogs,
         loadingBlogs,
         addBlog: async (blog) => {
+            const tempId = `temp-${Date.now()}`;
+            const optimisticBlog = { ...blog, _id: tempId, createdAt: new Date() };
+
+            setBlogs([optimisticBlog, ...blogs]);
+
             try {
                 const imageUrl = await handleImageUpload(blog.image);
                 const blogWithUrl = { ...blog, image: imageUrl };
                 const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/blogs/addblog`, blogWithUrl);
-                setBlogs([...blogs, response.data]);
+                setBlogs(prev => prev.map(b => b._id === tempId ? response.data : b));
             } catch (error) {
+                setBlogs(prev => prev.filter(b => b._id !== tempId));
                 console.error("Error adding blog:", error);
+                alert("Failed to add blog. Please try again.");
             }
         },
         updateBlog: async (id, updatedData) => {
+            const originalBlogs = [...blogs];
+
+            setBlogs(blogs.map(blog => blog._id === id ? { ...blog, ...updatedData } : blog));
+
             try {
                 let imageUrl = updatedData.image;
                 if (updatedData.image && updatedData.image.startsWith('data:image')) {
@@ -463,9 +526,11 @@ export const DataProvider = ({ children }) => {
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
                 const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/blogs/editblog/${id}`, dataWithUrl);
-                setBlogs(blogs.map(blog => blog._id === id ? response.data : blog));
+                setBlogs(prev => prev.map(blog => blog._id === id ? response.data : blog));
             } catch (error) {
+                setBlogs(originalBlogs);
                 console.error("Error updating blog:", error);
+                alert("Failed to update blog. Please try again.");
             }
         },
         deleteBlog: async (id) => {
@@ -484,16 +549,27 @@ export const DataProvider = ({ children }) => {
         popularItems,
         loadingPopularItems,
         addPopularItem: async (item) => {
+            const tempId = `temp-${Date.now()}`;
+            const optimisticItem = { ...item, _id: tempId, createdAt: new Date() };
+
+            setPopularItems([optimisticItem, ...popularItems]);
+
             try {
                 const imageUrl = await handleImageUpload(item.image);
                 const itemWithUrl = { ...item, image: imageUrl };
                 const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/food`, itemWithUrl);
-                setPopularItems([...popularItems, response.data]);
+                setPopularItems(prev => prev.map(i => i._id === tempId ? response.data : i));
             } catch (error) {
+                setPopularItems(prev => prev.filter(i => i._id !== tempId));
                 console.error("Error adding popular item:", error);
+                alert("Failed to add popular item. Please try again.");
             }
         },
         updatePopularItem: async (id, updatedData) => {
+            const originalItems = [...popularItems];
+
+            setPopularItems(popularItems.map(item => item._id === id ? { ...item, ...updatedData } : item));
+
             try {
                 let imageUrl = updatedData.image;
                 if (updatedData.image && updatedData.image.startsWith('data:image')) {
@@ -501,9 +577,11 @@ export const DataProvider = ({ children }) => {
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
                 const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/food/${id}`, dataWithUrl);
-                setPopularItems(popularItems.map(item => item._id === id ? response.data : item));
+                setPopularItems(prev => prev.map(item => item._id === id ? response.data : item));
             } catch (error) {
+                setPopularItems(originalItems);
                 console.error("Error updating popular item:", error);
+                alert("Failed to update popular item. Please try again.");
             }
         },
         deletePopularItem: async (id) => {
@@ -522,16 +600,27 @@ export const DataProvider = ({ children }) => {
         rangeMenus,
         loadingRangeMenus,
         addRangeMenu: async (menu) => {
+            const tempId = `temp-${Date.now()}`;
+            const optimisticMenu = { ...menu, _id: tempId, createdAt: new Date() };
+
+            setRangeMenus([optimisticMenu, ...rangeMenus]);
+
             try {
                 const imageUrl = await handleImageUpload(menu.image);
                 const menuWithUrl = { ...menu, image: imageUrl };
                 const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/range-menus`, menuWithUrl);
-                setRangeMenus([response.data, ...rangeMenus]);
+                setRangeMenus(prev => prev.map(m => m._id === tempId ? response.data : m));
             } catch (error) {
+                setRangeMenus(prev => prev.filter(m => m._id !== tempId));
                 console.error("Error adding range menu:", error);
+                alert("Failed to add range menu. Please try again.");
             }
         },
         updateRangeMenu: async (id, updatedData) => {
+            const originalMenus = [...rangeMenus];
+
+            setRangeMenus(rangeMenus.map(m => m._id === id ? { ...m, ...updatedData } : m));
+
             try {
                 let imageUrl = updatedData.image;
                 if (updatedData.image && updatedData.image.startsWith('data:image')) {
@@ -539,9 +628,11 @@ export const DataProvider = ({ children }) => {
                 }
                 const dataWithUrl = { ...updatedData, image: imageUrl };
                 const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/range-menus/${id}`, dataWithUrl);
-                setRangeMenus(rangeMenus.map(m => m._id === id ? response.data : m));
+                setRangeMenus(prev => prev.map(m => m._id === id ? response.data : m));
             } catch (error) {
+                setRangeMenus(originalMenus);
                 console.error("Error updating range menu:", error);
+                alert("Failed to update range menu. Please try again.");
             }
         },
         deleteRangeMenu: async (id) => {
@@ -561,11 +652,18 @@ export const DataProvider = ({ children }) => {
         youtubeLinks,
         loadingYoutubeLinks,
         addYoutubeLink: async (link) => {
+            const tempId = `temp-${Date.now()}`;
+            const optimisticLink = { ...link, _id: tempId, createdAt: new Date() };
+
+            setYoutubeLinks([optimisticLink, ...youtubeLinks]);
+
             try {
                 const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/youtube`, link);
-                setYoutubeLinks([response.data, ...youtubeLinks]);
+                setYoutubeLinks(prev => prev.map(l => l._id === tempId ? response.data : l));
             } catch (error) {
+                setYoutubeLinks(prev => prev.filter(l => l._id !== tempId));
                 console.error("Error adding YouTube link:", error);
+                alert("Failed to add YouTube link. Please try again.");
             }
         },
         deleteYoutubeLink: async (id) => {
@@ -583,13 +681,20 @@ export const DataProvider = ({ children }) => {
         packages,
         loadingPackages,
         addPackage: async (pkg) => {
+            const tempId = `temp-${Date.now()}`;
+            const optimisticPkg = { ...pkg, _id: tempId, createdAt: new Date() };
+
+            setPackages([optimisticPkg, ...packages]);
+
             try {
                 const imageUrl = await handleImageUpload(pkg.image);
                 const pkgWithUrl = { ...pkg, image: imageUrl };
                 const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/packages`, pkgWithUrl);
-                setPackages([response.data, ...packages]);
+                setPackages(prev => prev.map(p => p._id === tempId ? response.data : p));
             } catch (error) {
+                setPackages(prev => prev.filter(p => p._id !== tempId));
                 console.error("Error adding package:", error);
+                alert("Failed to add package. Please try again.");
             }
         },
         deletePackage: async (id) => {
@@ -604,13 +709,19 @@ export const DataProvider = ({ children }) => {
             }
         },
         updatePackage: async (id, updatedData) => {
+            const originalPackages = [...packages];
+
+            setPackages(packages.map(p => p._id === id ? { ...p, ...updatedData } : p));
+
             try {
                 const imageUrl = await handleImageUpload(updatedData.image);
                 const pkgWithUrl = { ...updatedData, image: imageUrl };
                 const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/packages/${id}`, pkgWithUrl);
-                setPackages(packages.map(p => p._id === id ? response.data : p));
+                setPackages(prev => prev.map(p => p._id === id ? response.data : p));
             } catch (error) {
+                setPackages(originalPackages);
                 console.error("Error updating package:", error);
+                alert("Failed to update package. Please try again.");
             }
         },
 
