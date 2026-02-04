@@ -8,7 +8,7 @@ import './RangeMenus.css';
 const MENU_RANGES = [
     'Paneer Range',
     'Fast Food Range',
-    'South Indian Range'
+    'Chinese Range'
 ];
 
 const RangeMenus = () => {
