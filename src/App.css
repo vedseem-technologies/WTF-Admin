@@ -24,6 +24,19 @@
   color: var(--text-secondary);
 }
 
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  width: 100%;
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-xl);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .content-wrapper {
