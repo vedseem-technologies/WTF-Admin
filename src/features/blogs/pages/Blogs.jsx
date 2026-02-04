@@ -95,7 +95,7 @@ const Blogs = () => {
         />
         <div className="filter-buttons" style={{ marginLeft: "auto" }}>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-            + Add New Blog
+            + Add New
           </button>
         </div>
       </div>
@@ -138,16 +138,15 @@ const Blogs = () => {
                 <td>
                   <div className="action-buttons">
                     <button
-                      className="btn-icon btn-edit"
+                      className="btn btn-sm btn-outline"
                       onClick={() => handleOpenModal(blog)}
-                      title="Edit"
+                      style={{ marginRight: "8px" }}
                     >
                       ✏️
                     </button>
                     <button
-                      className="btn-icon btn-delete"
+                      className="btn btn-sm btn-danger"
                       onClick={() => handleDelete(blog._id)}
-                      title="Delete"
                     >
                       🗑️
                     </button>

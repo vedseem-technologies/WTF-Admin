@@ -17,6 +17,7 @@ const Header = () => {
       "/blogs": "Blogs Management",
       "/popular-items": "Popular Items",
       "/range-menus": "Range Menus",
+      "/testimonials": "Testimonials",
       "/youtube": "YouTube Videos",
     };
 
@@ -40,6 +41,7 @@ const Header = () => {
       "/blogs": "Manage food-related blog posts",
       "/popular-items": "Manage your most popular menu items",
       "/range-menus": "Manage menu items across different ranges",
+      "/testimonials": "Manage customer testimonials",
       "/youtube": "Manage YouTube video links",
     };
 

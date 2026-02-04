@@ -132,18 +132,17 @@ const RangeMenus = () => {
                   <td>
                     <div className="action-buttons">
                       <button
-                        className="btn-icon btn-edit"
+                        className="btn btn-sm btn-outline"
                         onClick={() => handleOpenModal(menu)}
-                        title="Edit"
+                        style={{ marginRight: "8px" }}
                       >
-                        ✏️
+                        ✏️ 
                       </button>
                       <button
-                        className="btn-icon btn-delete"
+                        className="btn btn-sm btn-danger"
                         onClick={() => handleDelete(menu._id)}
-                        title="Delete"
                       >
-                        🗑️
+                        🗑️ 
                       </button>
                     </div>
                   </td>

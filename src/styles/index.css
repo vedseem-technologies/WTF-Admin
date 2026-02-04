@@ -830,6 +830,19 @@ a:hover {
   border-color: var(--warning);
 }
 
+.btn-danger {
+  background: var(--primary);
+  color: #fff;
+  border: 1px solid var(--primary);
+}
+
+.btn-danger:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
 .alert-danger {
   background: var(--danger-light);
   color: var(--danger);

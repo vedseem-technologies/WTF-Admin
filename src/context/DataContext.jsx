@@ -34,6 +34,7 @@ export const DataProvider = ({ children }) => {
   const [rangeMenus, setRangeMenus] = useState([]);
   const [youtubeLinks, setYoutubeLinks] = useState([]);
   const [packages, setPackages] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
 
   const [loadingBlogs, setLoadingBlogs] = useState(true);
   const [loadingPopularItems, setLoadingPopularItems] = useState(true);
@@ -44,6 +45,7 @@ export const DataProvider = ({ children }) => {
   const [loadingRangeMenus, setLoadingRangeMenus] = useState(true);
   const [loadingMenuItems, setLoadingMenuItems] = useState(true);
   const [loadingPackages, setLoadingPackages] = useState(true);
+  const [loadingTestimonials, setLoadingTestimonials] = useState(true);
   const [progress, setProgress] = useState(0);
 
   // Fetch Blogs
@@ -281,6 +283,31 @@ export const DataProvider = ({ children }) => {
     };
     fetchPackages();
   }, []);
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setLoadingTestimonials(true);
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/testimonials`,
+        );
+        if (Array.isArray(response.data)) {
+          setTestimonials(response.data);
+        } else {
+          console.error(
+            "Fetch testimonials response is not an array:",
+            response.data,
+          );
+          setTestimonials([]);
+        }
+      } catch (error) {
+        console.error("Error fetching testimonials:", error);
+      } finally {
+        setLoadingTestimonials(false);
+      }
+    };
+    fetchTestimonials();
+  }, []);
   // State declarations moved to top of component (before useEffect hooks)
 
   const addMenuItem = async (menuItem) => {
@@ -304,6 +331,74 @@ export const DataProvider = ({ children }) => {
       setMenuItems((prev) => prev.filter((item) => item._id !== tempId));
       console.error("Error adding menu item:", error);
       alert("Failed to add menu item. Please try again.");
+    }
+  };
+
+  const addTestimonial = async (testimonial) => {
+    const tempId = `temp-${Date.now()}`;
+    const optimisticTestimonial = {
+      ...testimonial,
+      _id: tempId,
+      createdAt: new Date(),
+    };
+
+    setTestimonials([optimisticTestimonial, ...testimonials]);
+
+    try {
+      const imageUrl = await handleImageUpload(testimonial.image);
+      const testimonialWithUrl = { ...testimonial, image: imageUrl };
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/testimonials`,
+        testimonialWithUrl,
+      );
+      setTestimonials((prev) =>
+        prev.map((t) => (t._id === tempId ? response.data : t)),
+      );
+    } catch (error) {
+      setTestimonials((prev) => prev.filter((t) => t._id !== tempId));
+      console.error("Error adding testimonial:", error);
+      alert("Failed to add testimonial. Please try again.");
+    }
+  };
+
+  const updateTestimonial = async (id, updatedData) => {
+    const originalTestimonials = [...testimonials];
+
+    setTestimonials(
+      testimonials.map((t) => (t._id === id ? { ...t, ...updatedData } : t)),
+    );
+
+    try {
+      let imageUrl = updatedData.image;
+      if (updatedData.image && updatedData.image.startsWith("data:image")) {
+        imageUrl = await handleImageUpload(updatedData.image);
+      }
+      const dataWithUrl = { ...updatedData, image: imageUrl };
+      const response = await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/api/testimonials/${id}`,
+        dataWithUrl,
+      );
+      setTestimonials((prev) =>
+        prev.map((t) => (t._id === id ? response.data : t)),
+      );
+    } catch (error) {
+      setTestimonials(originalTestimonials);
+      console.error("Error updating testimonial:", error);
+      alert("Failed to update testimonial. Please try again.");
+    }
+  };
+
+  const deleteTestimonial = async (id) => {
+    try {
+      setProgress(30);
+      await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/testimonials/${id}`,
+      );
+      setTestimonials(testimonials.filter((t) => t._id !== id));
+      setProgress(100);
+    } catch (error) {
+      console.error("Error deleting testimonial:", error);
+      setProgress(100);
     }
   };
 
@@ -698,7 +793,15 @@ export const DataProvider = ({ children }) => {
     addBulkMenuItems,
     updateMenuItem,
     deleteMenuItem,
+    updateMenuItem,
+    deleteMenuItem,
     toggleMenuItemActive,
+
+    testimonials,
+    loadingTestimonials,
+    addTestimonial,
+    updateTestimonial,
+    deleteTestimonial,
 
     addOrder,
     updateOrder,

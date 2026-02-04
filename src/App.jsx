@@ -26,6 +26,7 @@ import RangeMenus from "./features/menu/pages/RangeMenus";
 import Youtube from "./features/youtube/pages/Youtube";
 import Orders from "./features/orders/pages/Orders";
 import OrderDetail from "./features/orders/pages/OrderDetail";
+import Testimonials from "./features/testimonials/pages/Testimonials";
 import "./styles/index.css";
 import "./App.css";
 import GlobalLoader from "./components/feedback/GlobalLoader";
@@ -68,18 +69,17 @@ function App() {
                 element={<OccasionReport />}
               />
               <Route path="/packages/:id" element={<PackageDetail />} />
-
               <Route path="/services" element={<Services />} />
               <Route path="/categories" element={<Categories />} />
               <Route path="/menu/starter" element={<Starter />} />
               <Route path="/menu/main-course" element={<MainCourse />} />
               <Route path="/menu/dessert" element={<Dessert />} />
               <Route path="/menu/bread-rice" element={<BreadRice />} />
-
               <Route path="/menu-items" element={<MenuItems />} />
               <Route path="/blogs" element={<Blogs />} />
               <Route path="/popular-items" element={<PopularItems />} />
               <Route path="/range-menus" element={<RangeMenus />} />
+              <Route path="/testimonials" element={<Testimonials />} />
               <Route path="/youtube" element={<Youtube />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/orders/:id" element={<OrderDetail />} />
