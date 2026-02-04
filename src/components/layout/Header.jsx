@@ -18,6 +18,7 @@ const Header = () => {
       "/popular-items": "Popular Items",
       "/range-menus": "Range Menus",
       "/testimonials": "Testimonials",
+      "/events": "Events Management",
       "/youtube": "YouTube Videos",
     };
 
@@ -42,6 +43,7 @@ const Header = () => {
       "/popular-items": "Manage your most popular menu items",
       "/range-menus": "Manage menu items across different ranges",
       "/testimonials": "Manage customer testimonials",
+      "/events": "Manage upcoming and past events",
       "/youtube": "Manage YouTube video links",
     };
 

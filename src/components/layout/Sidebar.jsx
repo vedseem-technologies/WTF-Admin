@@ -17,6 +17,7 @@ const Sidebar = () => {
     { path: "/popular-items", icon: "⭐", label: "Popular Items" },
     { path: "/range-menus", icon: "📋", label: "Range Menus" },
     { path: "/testimonials", icon: "💬", label: "Testimonials" },
+    { path: "/events", icon: "📅", label: "Events" },
     { path: "/youtube", icon: "🎥", label: "YouTube" },
   ];
 

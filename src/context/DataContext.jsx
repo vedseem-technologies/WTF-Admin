@@ -35,6 +35,7 @@ export const DataProvider = ({ children }) => {
   const [youtubeLinks, setYoutubeLinks] = useState([]);
   const [packages, setPackages] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
+  const [events, setEvents] = useState([]);
 
   const [loadingBlogs, setLoadingBlogs] = useState(true);
   const [loadingPopularItems, setLoadingPopularItems] = useState(true);
@@ -46,6 +47,7 @@ export const DataProvider = ({ children }) => {
   const [loadingMenuItems, setLoadingMenuItems] = useState(true);
   const [loadingPackages, setLoadingPackages] = useState(true);
   const [loadingTestimonials, setLoadingTestimonials] = useState(true);
+  const [loadingEvents, setLoadingEvents] = useState(true);
   const [progress, setProgress] = useState(0);
 
   // Fetch Blogs
@@ -308,6 +310,31 @@ export const DataProvider = ({ children }) => {
     };
     fetchTestimonials();
   }, []);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoadingEvents(true);
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/events`,
+        );
+        if (Array.isArray(response.data)) {
+          setEvents(response.data);
+        } else {
+          console.error(
+            "Fetch events response is not an array:",
+            response.data,
+          );
+          setEvents([]);
+        }
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+    fetchEvents();
+  }, []);
   // State declarations moved to top of component (before useEffect hooks)
 
   const addMenuItem = async (menuItem) => {
@@ -398,6 +425,66 @@ export const DataProvider = ({ children }) => {
       setProgress(100);
     } catch (error) {
       console.error("Error deleting testimonial:", error);
+      setProgress(100);
+    }
+  };
+
+  const addEvent = async (event) => {
+    const tempId = `temp-${Date.now()}`;
+    const optimisticEvent = { ...event, _id: tempId, createdAt: new Date() };
+
+    setEvents([optimisticEvent, ...events]);
+
+    try {
+      const imageUrl = await handleImageUpload(event.image);
+      const eventWithUrl = { ...event, image: imageUrl };
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/events`,
+        eventWithUrl,
+      );
+      setEvents((prev) =>
+        prev.map((e) => (e._id === tempId ? response.data : e)),
+      );
+    } catch (error) {
+      setEvents((prev) => prev.filter((e) => e._id !== tempId));
+      console.error("Error adding event:", error);
+      alert("Failed to add event. Please try again.");
+    }
+  };
+
+  const updateEvent = async (id, updatedData) => {
+    const originalEvents = [...events];
+
+    setEvents(events.map((e) => (e._id === id ? { ...e, ...updatedData } : e)));
+
+    try {
+      let imageUrl = updatedData.image;
+      if (updatedData.image && updatedData.image.startsWith("data:image")) {
+        imageUrl = await handleImageUpload(updatedData.image);
+      }
+      const dataWithUrl = { ...updatedData, image: imageUrl };
+      const response = await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/api/events/${id}`,
+        dataWithUrl,
+      );
+      setEvents((prev) => prev.map((e) => (e._id === id ? response.data : e)));
+    } catch (error) {
+      setEvents(originalEvents);
+      console.error("Error updating event:", error);
+      alert("Failed to update event. Please try again.");
+    }
+  };
+
+  const deleteEvent = async (id) => {
+    try {
+      setProgress(30);
+      await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/events/${id}`,
+      );
+      setEvents(events.filter((e) => e._id !== id));
+      setProgress(100);
+    } catch (error) {
+      console.error("Error deleting event:", error);
       setProgress(100);
     }
   };
@@ -802,6 +889,12 @@ export const DataProvider = ({ children }) => {
     addTestimonial,
     updateTestimonial,
     deleteTestimonial,
+
+    events,
+    loadingEvents,
+    addEvent,
+    updateEvent,
+    deleteEvent,
 
     addOrder,
     updateOrder,

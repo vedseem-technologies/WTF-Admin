@@ -27,6 +27,7 @@ import Youtube from "./features/youtube/pages/Youtube";
 import Orders from "./features/orders/pages/Orders";
 import OrderDetail from "./features/orders/pages/OrderDetail";
 import Testimonials from "./features/testimonials/pages/Testimonials";
+import Events from "./features/events/pages/Events";
 import "./styles/index.css";
 import "./App.css";
 import GlobalLoader from "./components/feedback/GlobalLoader";
@@ -80,6 +81,7 @@ function App() {
               <Route path="/popular-items" element={<PopularItems />} />
               <Route path="/range-menus" element={<RangeMenus />} />
               <Route path="/testimonials" element={<Testimonials />} />
+              <Route path="/events" element={<Events />} />
               <Route path="/youtube" element={<Youtube />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/orders/:id" element={<OrderDetail />} />

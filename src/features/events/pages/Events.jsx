@@ -2,48 +2,47 @@ import { useState } from "react";
 import { useData } from "../../../context/DataContext";
 import Modal from "../../../components/ui/Modal";
 import ImageUpload from "../../../components/ui/ImageUpload";
+import "../../blogs/pages/Blogs.css"; // Reusing Blogs CSS for similar layout if needed
 
-const Testimonials = () => {
-  const {
-    testimonials,
-    loadingTestimonials,
-    addTestimonial,
-    updateTestimonial,
-    deleteTestimonial,
-  } = useData();
+const Events = () => {
+  const { events, loadingEvents, addEvent, updateEvent, deleteEvent } =
+    useData();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingTestimonial, setEditingTestimonial] = useState(null);
+  const [editingEvent, setEditingEvent] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: "",
-    role: "",
-    text: "",
-    rating: 5,
+    title: "",
     date: "",
+    location: "",
+    description: "",
+    type: "Festival",
+    status: "Upcoming",
     image: "",
   });
 
-  const handleOpenModal = (testimonial = null) => {
-    if (testimonial) {
-      setEditingTestimonial(testimonial);
+  const handleOpenModal = (event = null) => {
+    if (event) {
+      setEditingEvent(event);
       setFormData({
-        name: testimonial.name,
-        role: testimonial.role,
-        text: testimonial.text,
-        rating: testimonial.rating,
-        date: testimonial.date || "",
-        image: testimonial.image,
+        title: event.title,
+        date: event.date,
+        location: event.location || "",
+        description: event.description,
+        type: event.type || "Festival",
+        status: event.status || "Upcoming",
+        image: event.image || "",
       });
     } else {
-      setEditingTestimonial(null);
+      setEditingEvent(null);
       setFormData({
-        name: "",
-        role: "",
-        text: "",
-        rating: 5,
+        title: "",
         date: "",
+        location: "",
+        description: "",
+        type: "Festival",
+        status: "Upcoming",
         image: "",
       });
     }
@@ -52,13 +51,14 @@ const Testimonials = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setEditingTestimonial(null);
+    setEditingEvent(null);
     setFormData({
-      name: "",
-      role: "",
-      text: "",
-      rating: 5,
+      title: "",
       date: "",
+      location: "",
+      description: "",
+      type: "Festival",
+      status: "Upcoming",
       image: "",
     });
   };
@@ -66,23 +66,23 @@ const Testimonials = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingTestimonial) {
-        await updateTestimonial(editingTestimonial._id, formData);
+      if (editingEvent) {
+        await updateEvent(editingEvent._id, formData);
       } else {
-        await addTestimonial(formData);
+        await addEvent(formData);
       }
       handleCloseModal();
     } catch (error) {
-      console.error("Error saving testimonial:", error);
+      console.error("Error saving event:", error);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this testimonial?")) {
+    if (window.confirm("Are you sure you want to delete this event?")) {
       try {
-        await deleteTestimonial(id);
+        await deleteEvent(id);
       } catch (error) {
-        console.error("Error deleting testimonial:", error);
+        console.error("Error deleting event:", error);
       }
     }
   };
@@ -91,14 +91,14 @@ const Testimonials = () => {
     setFormData({ ...formData, image });
   };
 
-  const filteredTestimonials = testimonials.filter(
-    (testimonial) =>
-      testimonial.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      testimonial.role.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredEvents = events.filter(
+    (event) =>
+      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.location?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  if (loadingTestimonials) {
-    return <div className="loading-state">Loading testimonials...</div>;
+  if (loadingEvents) {
+    return <div className="loading-state">Loading events...</div>;
   }
 
   return (
@@ -107,13 +107,13 @@ const Testimonials = () => {
         <input
           type="text"
           className="form-control search-input"
-          placeholder="🔍 Search testimonials..."
+          placeholder="🔍 Search events..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <div className="filter-buttons" style={{ marginLeft: "auto" }}>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-            + Add New
+            + Add New Event
           </button>
         </div>
       </div>
@@ -123,56 +123,55 @@ const Testimonials = () => {
           <thead>
             <tr>
               <th>Image</th>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Review</th>
+              <th>Title</th>
               <th>Date</th>
-              <th>Rating</th>
+              <th>Location</th>
+              <th>Type</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredTestimonials.map((testimonial) => (
-              <tr key={testimonial._id}>
+            {filteredEvents.map((event) => (
+              <tr key={event._id}>
                 <td>
                   <img
-                    src={testimonial.image || "https://via.placeholder.com/40"}
-                    alt={testimonial.name}
+                    src={event.image || "https://via.placeholder.com/60"}
+                    alt={event.title}
                     className="table-thumbnail"
                     style={{
-                      width: "40px",
+                      width: "60px",
                       height: "40px",
-                      borderRadius: "50%",
+                      borderRadius: "4px",
                       objectFit: "cover",
                     }}
                   />
                 </td>
-                <td className="font-medium">{testimonial.name}</td>
-                <td className="text-secondary">{testimonial.role}</td>
-                <td
-                  style={{
-                    maxWidth: "300px",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {testimonial.text}
+                <td className="font-medium">{event.title}</td>
+                <td>{event.date}</td>
+                <td>{event.location}</td>
+                <td>
+                  <span className="badge badge-secondary">{event.type}</span>
                 </td>
-                <td>{testimonial.date}</td>
-                <td>{"⭐".repeat(testimonial.rating)}</td>
+                <td>
+                  <span
+                    className={`badge ${event.status === "Upcoming" ? "badge-success" : "badge-warning"}`}
+                  >
+                    {event.status}
+                  </span>
+                </td>
                 <td>
                   <div className="action-buttons">
                     <button
                       className="btn btn-sm btn-outline"
-                      onClick={() => handleOpenModal(testimonial)}
+                      onClick={() => handleOpenModal(event)}
                       style={{ marginRight: "8px" }}
                     >
                       ✏️ Edit
                     </button>
                     <button
                       className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(testimonial._id)}
+                      onClick={() => handleDelete(event._id)}
                     >
                       🗑️ Delete
                     </button>
@@ -182,9 +181,9 @@ const Testimonials = () => {
             ))}
           </tbody>
         </table>
-        {filteredTestimonials.length === 0 && (
+        {filteredEvents.length === 0 && (
           <div className="empty-state">
-            <p>No testimonials found</p>
+            <p>No events found</p>
           </div>
         )}
       </div>
@@ -192,11 +191,11 @@ const Testimonials = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={editingTestimonial ? "Edit Testimonial" : "Add New Testimonial"}
+        title={editingEvent ? "Edit Event" : "Add New Event"}
       >
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="form-group">
-            <label>Client Image</label>
+            <label>Event Image</label>
             <ImageUpload
               image={formData.image}
               onImageChange={handleImageChange}
@@ -205,41 +204,14 @@ const Testimonials = () => {
           </div>
 
           <div className="form-group">
-            <label>Name</label>
+            <label>Title</label>
             <input
               type="text"
               className="form-control"
-              value={formData.name}
+              value={formData.title}
               onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
+                setFormData({ ...formData, title: e.target.value })
               }
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Role / Designation</label>
-            <input
-              type="text"
-              className="form-control"
-              value={formData.role}
-              onChange={(e) =>
-                setFormData({ ...formData, role: e.target.value })
-              }
-              placeholder="e.g. Wedding Client, Corporate Event"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Review Text</label>
-            <textarea
-              className="form-control"
-              value={formData.text}
-              onChange={(e) =>
-                setFormData({ ...formData, text: e.target.value })
-              }
-              rows="4"
               required
             />
           </div>
@@ -253,25 +225,64 @@ const Testimonials = () => {
               onChange={(e) =>
                 setFormData({ ...formData, date: e.target.value })
               }
-              placeholder="e.g. December 2025"
+              placeholder="e.g. February 15-17, 2026"
+              required
             />
           </div>
 
           <div className="form-group">
-            <label>Rating (1-5)</label>
+            <label>Location</label>
+            <input
+              type="text"
+              className="form-control"
+              value={formData.location}
+              onChange={(e) =>
+                setFormData({ ...formData, location: e.target.value })
+              }
+              placeholder="e.g. Central Park, Delhi"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Type</label>
+            <input
+              type="text"
+              className="form-control"
+              value={formData.type}
+              onChange={(e) =>
+                setFormData({ ...formData, type: e.target.value })
+              }
+              placeholder="e.g. Festival, Tasting Event"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Status</label>
             <select
               className="form-control"
-              value={formData.rating}
+              value={formData.status}
               onChange={(e) =>
-                setFormData({ ...formData, rating: parseInt(e.target.value) })
+                setFormData({ ...formData, status: e.target.value })
               }
             >
-              <option value={1}>1 Star</option>
-              <option value={2}>2 Stars</option>
-              <option value={3}>3 Stars</option>
-              <option value={4}>4 Stars</option>
-              <option value={5}>5 Stars</option>
+              <option value="Upcoming">Upcoming</option>
+              <option value="Limited Seats">Limited Seats</option>
+              <option value="Open for All">Open for All</option>
+              <option value="Past">Past</option>
             </select>
+          </div>
+
+          <div className="form-group">
+            <label>Description</label>
+            <textarea
+              className="form-control"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              rows="4"
+              required
+            />
           </div>
 
           <div className="modal-actions">
@@ -283,7 +294,7 @@ const Testimonials = () => {
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              {editingTestimonial ? "Save Changes" : "Add Testimonial"}
+              {editingEvent ? "Save Changes" : "Add Event"}
             </button>
           </div>
         </form>
@@ -292,4 +303,4 @@ const Testimonials = () => {
   );
 };
 
-export default Testimonials;
+export default Events;
