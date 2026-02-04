@@ -79,6 +79,7 @@ const Services = () => {
       setSelectedMainCourse([]);
       setSelectedDesserts([]);
       setSelectedBreadRice([]);
+      setIsLoadingSelection(false);
     }
     setIsModalOpen(true);
   };
@@ -278,17 +279,8 @@ const Services = () => {
             </div>
           </div>
 
-          <div
-            className="menu-selection-section"
-            style={{
-              marginTop: "2rem",
-              borderTop: "1px solid #eee",
-              paddingTop: "1rem",
-            }}
-          >
-            <h4 style={{ marginBottom: "1rem", color: "var(--text-primary)" }}>
-              Menu Selection
-            </h4>
+          <div className="menu-selection-section">
+            <h4 className="menu-selection-title">Menu Selection</h4>
             {isLoadingSelection ? (
               <div>Loading menu data...</div>
             ) : (

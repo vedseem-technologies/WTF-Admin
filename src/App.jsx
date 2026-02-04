@@ -9,10 +9,7 @@ import { AuthProvider } from "./context/AuthContext";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import Dashboard from "./features/dashboard/pages/Dashboard";
-import OccasionDetail from "./features/occasions/pages/OccasionDetail";
 import OccasionReport from "./features/occasions/pages/OccasionReport";
-import ServiceDetail from "./features/services/pages/ServiceDetail";
-import CategoryDetail from "./features/categories/pages/CategoryDetail";
 import PackageDetail from "./features/packages/pages/PackageDetail";
 import Login from "./features/auth/pages/Login";
 import Occasions from "./features/occasions/pages/Occasions";
@@ -66,7 +63,6 @@ function App() {
             >
               <Route path="/" element={<Dashboard />} />
               <Route path="/occasions" element={<Occasions />} />
-              <Route path="/occasions/:id" element={<OccasionDetail />} />
               <Route
                 path="/occasions/:id/report"
                 element={<OccasionReport />}
@@ -74,9 +70,7 @@ function App() {
               <Route path="/packages/:id" element={<PackageDetail />} />
 
               <Route path="/services" element={<Services />} />
-              <Route path="/services/:id" element={<ServiceDetail />} />
               <Route path="/categories" element={<Categories />} />
-              <Route path="/categories/:id" element={<CategoryDetail />} />
               <Route path="/menu/starter" element={<Starter />} />
               <Route path="/menu/main-course" element={<MainCourse />} />
               <Route path="/menu/dessert" element={<Dessert />} />
