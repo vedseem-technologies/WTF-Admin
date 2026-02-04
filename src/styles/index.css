@@ -836,9 +836,9 @@ a:hover {
   border-color: var(--danger);
 }
 
-.page-subtitle {
+/* .page-subtitle {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
-}
+} */

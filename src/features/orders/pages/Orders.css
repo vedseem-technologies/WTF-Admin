@@ -28,9 +28,26 @@
 }
 
 .orders-filters {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     gap: var(--space-lg);
+    flex-wrap: wrap;
+}
+
+.orders-actions {
+    display: flex;
+    gap: var(--space-md);
+    flex: 1;
+    max-width: 800px;
+}
+
+.orders-actions .search-input {
+    flex: 3;
+}
+
+.orders-actions .filter-select {
+    flex: 1;
 }
 
 .orders-table {

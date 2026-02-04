@@ -143,18 +143,6 @@ const Categories = () => {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <div className="page-header-content">
-          <h2 className="page-title-big">📁 Categories Management</h2>
-          <p className="page-description">
-            Manage service categories for filtering and pricing
-          </p>
-        </div>
-        <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-          + Add Category
-        </button>
-      </div>
-
       <div className="page-filters">
         <input
           type="text"
@@ -163,7 +151,7 @@ const Categories = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <div className="filter-buttons">
+        <div className="filter-buttons" style={{ marginLeft: 'auto' }}>
           <button
             className={`filter-btn ${filter === "all" ? "active" : ""}`}
             onClick={() => setFilter("all")}
@@ -181,6 +169,9 @@ const Categories = () => {
             onClick={() => setFilter("inactive")}
           >
             Inactive ({categories.filter((c) => !c.active).length})
+          </button>
+          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+            + Add Category
           </button>
         </div>
       </div>

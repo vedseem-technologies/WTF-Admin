@@ -51,19 +51,19 @@
   text-align: center;
 }
 
-.form-group {
+.login-form .form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.form-group label {
+.login-form .form-group label {
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
   font-weight: 500;
 }
 
-.form-group input {
+.login-form .form-group input {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
@@ -73,14 +73,14 @@
   transition: all 0.2s ease;
 }
 
-.form-group input:focus {
+.login-form .form-group input:focus {
   outline: none;
   border-color: #6366f1;
   background: rgba(255, 255, 255, 0.12);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
-.form-group input::placeholder {
+.login-form .form-group input::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
 

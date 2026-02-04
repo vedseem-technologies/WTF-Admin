@@ -148,18 +148,6 @@ const Occasions = () => {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <div className="page-header-content">
-          <h2 className="page-title-big">🎉 Occasions Management</h2>
-          <p className="page-description">
-            Manage occasions for your catering services
-          </p>
-        </div>
-        <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-          + Add Occasion
-        </button>
-      </div>
-
       <div className="page-filters">
         <input
           type="text"
@@ -169,7 +157,7 @@ const Occasions = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
-        <div className="filter-buttons">
+        <div className="filter-buttons" style={{ marginLeft: "auto" }}>
           <button
             className={`filter-btn ${filter === "all" ? "active" : ""}`}
             onClick={() => setFilter("all")}

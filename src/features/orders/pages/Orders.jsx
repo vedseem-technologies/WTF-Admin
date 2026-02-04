@@ -58,11 +58,54 @@ const Orders = () => {
   return (
     <div className="page-container">
       <div className="page-header">
-        <div className="page-header-content">
+        {/* <div className="page-header-content">
           <h2 className="page-title-big">📋 Orders Management</h2>
           <p className="page-description">
             View and manage all customer orders
           </p>
+        </div> */}
+        {/* <div className="orders-stats">
+          <div className="stat-item">
+            <span className="stat-label">Total</span>
+            <span className="stat-value">{orders.length}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Pending</span>
+            <span className="stat-value text-warning">
+              {orders.filter((o) => o.status === "Pending").length}
+            </span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Delivered</span>
+            <span className="stat-value text-success">
+              {orders.filter((o) => o.status === "Delivered").length}
+            </span>
+          </div>
+        </div> */}
+      </div>
+
+      <div className="page-filters orders-filters">
+        <div className="orders-actions">
+          <input
+            type="text"
+            className="form-control search-input"
+            placeholder="🔍 Search by order ID or customer name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          <select
+            className="form-select filter-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All Status</option>
+            {uniqueStatuses.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="orders-stats">
           <div className="stat-item">
@@ -82,29 +125,6 @@ const Orders = () => {
             </span>
           </div>
         </div>
-      </div>
-
-      <div className="page-filters orders-filters">
-        <input
-          type="text"
-          className="form-control search-input"
-          placeholder="🔍 Search by order ID or customer name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        <select
-          className="form-select filter-select"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">All Status</option>
-          {uniqueStatuses.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className="table-container">

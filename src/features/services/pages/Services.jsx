@@ -142,16 +142,6 @@ const Services = () => {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <div className="page-header-content">
-          <h2 className="page-title-big">🍽️ Services Management</h2>
-          <p className="page-description">Manage catering service types</p>
-        </div>
-        <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-          + Add Service
-        </button>
-      </div>
-
       <div className="page-filters">
         <input
           type="text"
@@ -160,7 +150,7 @@ const Services = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <div className="filter-buttons">
+        <div className="filter-buttons" style={{ marginLeft: "auto" }}>
           <button
             className={`filter-btn ${filter === "all" ? "active" : ""}`}
             onClick={() => setFilter("all")}
@@ -178,6 +168,9 @@ const Services = () => {
             onClick={() => setFilter("inactive")}
           >
             Inactive ({services.filter((s) => !s.active).length})
+          </button>
+          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+            + Add Service
           </button>
         </div>
       </div>
