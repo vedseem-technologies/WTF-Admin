@@ -54,18 +54,37 @@ const Services = () => {
 
       // Load menu selection
       setIsLoadingSelection(true);
-      const savedSelection = await getServiceMenuSelection(service._id);
-      if (savedSelection) {
-        const mapItems = (ids) => {
-          if (!ids) return [];
-          return menuItems.filter((item) => ids.includes(item._id));
-        };
+      try {
+        const savedSelection = await getServiceMenuSelection(service._id);
+        console.log('Loaded menu selection for service:', savedSelection);
 
-        setSelectedStarters(mapItems(savedSelection.starters));
-        setSelectedMainCourse(mapItems(savedSelection.mainCourses));
-        setSelectedDesserts(mapItems(savedSelection.desserts));
-        setSelectedBreadRice(mapItems(savedSelection.breadRice));
-      } else {
+        if (savedSelection) {
+          const mapItems = (data) => {
+            if (!data || !Array.isArray(data)) return [];
+
+            // Check if data is already an array of objects (populated)
+            if (data.length > 0 && typeof data[0] === 'object' && data[0]._id) {
+              console.log('Data is already populated objects:', data);
+              return data; // Already populated, return as-is
+            }
+
+            // Otherwise, data is array of IDs - map to full objects
+            console.log('Data is IDs, mapping to objects:', data);
+            return menuItems.filter((item) => data.includes(item._id));
+          };
+
+          setSelectedStarters(mapItems(savedSelection.starters));
+          setSelectedMainCourse(mapItems(savedSelection.mainCourses));
+          setSelectedDesserts(mapItems(savedSelection.desserts));
+          setSelectedBreadRice(mapItems(savedSelection.breadRice));
+        } else {
+          setSelectedStarters([]);
+          setSelectedMainCourse([]);
+          setSelectedDesserts([]);
+          setSelectedBreadRice([]);
+        }
+      } catch (error) {
+        console.error('Error loading menu selection:', error);
         setSelectedStarters([]);
         setSelectedMainCourse([]);
         setSelectedDesserts([]);
@@ -88,6 +107,19 @@ const Services = () => {
     setIsModalOpen(false);
     setEditingService(null);
     setFormData({ title: "", image: "", active: true });
+    // Reset menu selections
+    setSelectedStarters([]);
+    setSelectedMainCourse([]);
+    setSelectedDesserts([]);
+    setSelectedBreadRice([]);
+    // Reset dropdown states
+    setOpenDropdown(null);
+    setDropdownSearchTerms({
+      starter: "",
+      mainCourse: "",
+      dessert: "",
+      breadRice: "",
+    });
   };
 
   const handleSubmit = async (e) => {

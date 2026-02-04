@@ -55,18 +55,28 @@ const Categories = () => {
 
       // Load menu selection
       setIsLoadingSelection(true);
-      const savedSelection = await getCategoryMenuSelection(category._id);
-      if (savedSelection) {
-        const mapItems = (ids) => {
-          if (!ids) return [];
-          return menuItems.filter((item) => ids.includes(item._id));
-        };
+      try {
+        const savedSelection = await getCategoryMenuSelection(category._id);
+        console.log('Loaded menu selection for category:', savedSelection);
 
-        setSelectedStarters(mapItems(savedSelection.starters));
-        setSelectedMainCourse(mapItems(savedSelection.mainCourses));
-        setSelectedDesserts(mapItems(savedSelection.desserts));
-        setSelectedBreadRice(mapItems(savedSelection.breadRice));
-      } else {
+        if (savedSelection) {
+          const mapItems = (ids) => {
+            if (!ids || !Array.isArray(ids)) return [];
+            return menuItems.filter((item) => ids.includes(item._id));
+          };
+
+          setSelectedStarters(mapItems(savedSelection.starters));
+          setSelectedMainCourse(mapItems(savedSelection.mainCourses));
+          setSelectedDesserts(mapItems(savedSelection.desserts));
+          setSelectedBreadRice(mapItems(savedSelection.breadRice));
+        } else {
+          setSelectedStarters([]);
+          setSelectedMainCourse([]);
+          setSelectedDesserts([]);
+          setSelectedBreadRice([]);
+        }
+      } catch (error) {
+        console.error('Error loading menu selection:', error);
         setSelectedStarters([]);
         setSelectedMainCourse([]);
         setSelectedDesserts([]);
@@ -89,6 +99,19 @@ const Categories = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
     setFormData({ title: "", image: "", active: true });
+    // Reset menu selections
+    setSelectedStarters([]);
+    setSelectedMainCourse([]);
+    setSelectedDesserts([]);
+    setSelectedBreadRice([]);
+    // Reset dropdown states
+    setOpenDropdown(null);
+    setDropdownSearchTerms({
+      starter: "",
+      mainCourse: "",
+      dessert: "",
+      breadRice: "",
+    });
   };
 
   const handleSubmit = async (e) => {
