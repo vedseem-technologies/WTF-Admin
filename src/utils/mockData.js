@@ -414,30 +414,7 @@ export const mockRangeMenus = [
     rating: 4.3,
     range: "Fast Food Range"
   },
-  {
-    id: 6,
-    name: "Masala Dosa",
-    image: "https://images.unsplash.com/photo-1630383249896-424e482df921?w=400",
-    price: 100,
-    rating: 4.9,
-    range: "South Indian Range"
-  },
-  {
-    id: 7,
-    name: "Idli Sambar",
-    image: "https://images.unsplash.com/photo-1589301760014-218be2c8e6c8?w=400",
-    price: 80,
-    rating: 4.7,
-    range: "South Indian Range"
-  },
-  {
-    id: 8,
-    name: "Medu Vada",
-    image: "https://images.unsplash.com/photo-1645177628172-a94c1f96e6db?w=400",
-    price: 90,
-    rating: 4.6,
-    range: "South Indian Range"
-  }
+
 ];
 
 // YouTube Links
