@@ -225,39 +225,40 @@ export const DataProvider = ({ children }) => {
     fetchRangeMenus();
   }, []);
 
-  useEffect(() => {
-    const fetchMenuItems = async () => {
-      try {
-        setProgress(30);
-        setLoadingMenuItems(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/menu-items`,
+  const fetchMenuItems = async () => {
+    try {
+      setProgress(30);
+      setLoadingMenuItems(true);
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/menu-items`,
+      );
+      console.log("Menu Items API Response:", response);
+      console.log("Menu Items Data:", response.data);
+      if (response.data && Array.isArray(response.data.data)) {
+        setMenuItems(response.data.data);
+      } else if (Array.isArray(response.data)) {
+        setMenuItems(response.data);
+      } else {
+        console.error(
+          "Fetch menu items response is not an array:",
+          response.data,
         );
-        console.log("Menu Items API Response:", response);
-        console.log("Menu Items Data:", response.data);
-        if (response.data && Array.isArray(response.data.data)) {
-          setMenuItems(response.data.data);
-        } else if (Array.isArray(response.data)) {
-          setMenuItems(response.data);
-        } else {
-          console.error(
-            "Fetch menu items response is not an array:",
-            response.data,
-          );
-          setMenuItems([]);
-        }
-        setProgress(100);
-      } catch (error) {
-        console.error("Error fetching menu items:", error);
-        if (error.response) {
-          console.error("Error response data:", error.response.data);
-          console.error("Error response status:", error.response.status);
-        }
-        setProgress(100);
-      } finally {
-        setLoadingMenuItems(false);
+        setMenuItems([]);
       }
-    };
+      setProgress(100);
+    } catch (error) {
+      console.error("Error fetching menu items:", error);
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        console.error("Error response status:", error.response.status);
+      }
+      setProgress(100);
+    } finally {
+      setLoadingMenuItems(false);
+    }
+  };
+
+  useEffect(() => {
     fetchMenuItems();
   }, []);
 
@@ -624,6 +625,7 @@ export const DataProvider = ({ children }) => {
     categories,
     menuItems,
     loadingMenuItems,
+    refreshMenuItems: fetchMenuItems,
     orders,
 
     // Occasions

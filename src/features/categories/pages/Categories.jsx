@@ -35,6 +35,12 @@ const Categories = () => {
   const [selectedMainCourse, setSelectedMainCourse] = useState([]);
   const [selectedDesserts, setSelectedDesserts] = useState([]);
   const [selectedBreadRice, setSelectedBreadRice] = useState([]);
+
+  // Unselected Menu Items State (For Strict Persistence)
+  const [unselectedStarters, setUnselectedStarters] = useState([]);
+  const [unselectedMainCourse, setUnselectedMainCourse] = useState([]);
+  const [unselectedDesserts, setUnselectedDesserts] = useState([]);
+  const [unselectedBreadRice, setUnselectedBreadRice] = useState([]);
   const [isLoadingSelection, setIsLoadingSelection] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [dropdownSearchTerms, setDropdownSearchTerms] = useState({
@@ -45,6 +51,9 @@ const Categories = () => {
   });
 
   const handleOpenModal = async (category = null) => {
+    // Debug: Full menu items
+    console.log("Full Menu Items (Source of Truth):", menuItems);
+
     if (category) {
       setEditingCategory(category);
       setFormData({
@@ -60,16 +69,51 @@ const Categories = () => {
         console.log('Loaded menu selection for category:', savedSelection);
 
         if (savedSelection) {
-          const mapItems = (ids) => {
-            if (!ids || !Array.isArray(ids)) return [];
-            return menuItems.filter((item) => ids.includes(item._id));
+          const mapItems = (data) => {
+            if (!data || !Array.isArray(data)) return [];
+
+            let itemsToMap = [];
+            if (data.length > 0 && typeof data[0] === 'object' && data[0]._id) {
+              itemsToMap = data;
+            } else {
+              itemsToMap = menuItems.filter((item) => data.includes(item._id));
+            }
+            return itemsToMap;
           };
 
-          setSelectedStarters(mapItems(savedSelection.starters));
-          setSelectedMainCourse(mapItems(savedSelection.mainCourses));
-          setSelectedDesserts(mapItems(savedSelection.desserts));
-          setSelectedBreadRice(mapItems(savedSelection.breadRice));
+          // Helper for Strict Filtering
+          const filterByCategory = (items, categoryName, categoryId) => {
+            return items.filter(i => i.category === categoryName || i.category == categoryId);
+          };
+
+          const mappedSelectedStarters = mapItems(savedSelection.starters);
+          const mappedSelectedMain = mapItems(savedSelection.mainCourses);
+          const mappedSelectedDesserts = mapItems(savedSelection.desserts);
+          const mappedSelectedBreadRice = mapItems(savedSelection.breadRice);
+
+          const mappedUnselectedStarters = mapItems(savedSelection.unselectedStarters);
+          const mappedUnselectedMain = mapItems(savedSelection.unselectedMainCourses);
+          const mappedUnselectedDesserts = mapItems(savedSelection.unselectedDesserts);
+          const mappedUnselectedBreadRice = mapItems(savedSelection.unselectedBreadRice);
+
+          // Apply Strict Category Filtering
+          setSelectedStarters(filterByCategory(mappedSelectedStarters, 'Starter', 1));
+          setSelectedMainCourse(filterByCategory(mappedSelectedMain, 'Main Course', 2));
+          setSelectedDesserts(filterByCategory(mappedSelectedDesserts, 'Dessert', 4));
+          setSelectedBreadRice(filterByCategory(mappedSelectedBreadRice, 'Rice & Bread', 3));
+
+          setUnselectedStarters(filterByCategory(mappedUnselectedStarters, 'Starter', 1));
+          setUnselectedMainCourse(filterByCategory(mappedUnselectedMain, 'Main Course', 2));
+          setUnselectedDesserts(filterByCategory(mappedUnselectedDesserts, 'Dessert', 4));
+          setUnselectedBreadRice(filterByCategory(mappedUnselectedBreadRice, 'Rice & Bread', 3));
+
         } else {
+          // New category implementation fallback
+          setUnselectedStarters(menuItems.filter(i => i.category === 'Starter' || i.category == 1));
+          setUnselectedMainCourse(menuItems.filter(i => i.category === 'Main Course' || i.category == 2));
+          setUnselectedDesserts(menuItems.filter(i => i.category === 'Dessert' || i.category == 4));
+          setUnselectedBreadRice(menuItems.filter(i => i.category === 'Rice & Bread' || i.category == 3));
+
           setSelectedStarters([]);
           setSelectedMainCourse([]);
           setSelectedDesserts([]);
@@ -86,6 +130,13 @@ const Categories = () => {
     } else {
       setEditingCategory(null);
       setFormData({ title: "", image: "", active: true });
+
+      // Strict Initialization
+      setUnselectedStarters(menuItems.filter(i => i.category === 'Starter' || i.category == 1));
+      setUnselectedMainCourse(menuItems.filter(i => i.category === 'Main Course' || i.category == 2));
+      setUnselectedDesserts(menuItems.filter(i => i.category === 'Dessert' || i.category == 4));
+      setUnselectedBreadRice(menuItems.filter(i => i.category === 'Rice & Bread' || i.category == 3));
+
       setSelectedStarters([]);
       setSelectedMainCourse([]);
       setSelectedDesserts([]);
@@ -104,6 +155,12 @@ const Categories = () => {
     setSelectedMainCourse([]);
     setSelectedDesserts([]);
     setSelectedBreadRice([]);
+
+    setUnselectedStarters([]);
+    setUnselectedMainCourse([]);
+    setUnselectedDesserts([]);
+    setUnselectedBreadRice([]);
+
     // Reset dropdown states
     setOpenDropdown(null);
     setDropdownSearchTerms({
@@ -112,6 +169,16 @@ const Categories = () => {
       dessert: "",
       breadRice: "",
     });
+  };
+
+  // State Wrappers to sync Selected/Unselected
+  // Helper for Updating Selection State
+  const updateSelection = (category, newSelected, allCategoryItems, setUnselected) => {
+    // Unselected = All Items - Selected Items
+    // Identify by ID to be safe
+    const selectedIds = new Set(newSelected.map(i => i._id));
+    const newUnselected = allCategoryItems.filter(i => !selectedIds.has(i._id));
+    setUnselected(newUnselected);
   };
 
   const handleSubmit = async (e) => {
@@ -131,12 +198,24 @@ const Categories = () => {
     }
 
     if (categoryId) {
+      // Debug: Log state before constructing payload
+      console.log("Preparing to Save Category - State Check:", {
+        selected: { starters: selectedStarters.length, mains: selectedMainCourse.length },
+        unselected: { starters: unselectedStarters.length, mains: unselectedMainCourse.length }
+      });
+
       const menuSelection = {
         starters: selectedStarters.map((item) => item._id),
         mainCourses: selectedMainCourse.map((item) => item._id),
         desserts: selectedDesserts.map((item) => item._id),
         breadRice: selectedBreadRice.map((item) => item._id),
+        unselectedStarters: unselectedStarters.map(i => i._id),
+        unselectedMainCourses: unselectedMainCourse.map(i => i._id),
+        unselectedDesserts: unselectedDesserts.map(i => i._id),
+        unselectedBreadRice: unselectedBreadRice.map(i => i._id),
       };
+
+      console.log("FINAL PAYLOAD being sent to API (Category):", JSON.stringify(menuSelection, null, 2));
       await saveCategoryMenuSelection(categoryId, menuSelection);
     }
 
@@ -317,8 +396,11 @@ const Categories = () => {
                   label="Starters"
                   icon="🥗"
                   selected={selectedStarters}
-                  setSelected={setSelectedStarters}
-                  options={menuItems}
+                  setSelected={(newSelected) => {
+                    setSelectedStarters(newSelected);
+                    updateSelection('starter', newSelected, menuItems.filter(i => i.category === 'Starter'), setUnselectedStarters);
+                  }}
+                  options={menuItems.filter(i => i.category === 'Starter')}
                   categoryKey="starter"
                   searchTerms={dropdownSearchTerms}
                   setSearchTerms={setDropdownSearchTerms}
@@ -329,8 +411,11 @@ const Categories = () => {
                   label="Main Course"
                   icon="🍛"
                   selected={selectedMainCourse}
-                  setSelected={setSelectedMainCourse}
-                  options={menuItems}
+                  setSelected={(newSelected) => {
+                    setSelectedMainCourse(newSelected);
+                    updateSelection('mainCourse', newSelected, menuItems.filter(i => i.category === 'Main Course'), setUnselectedMainCourse);
+                  }}
+                  options={menuItems.filter(i => i.category === 'Main Course')}
                   categoryKey="mainCourse"
                   searchTerms={dropdownSearchTerms}
                   setSearchTerms={setDropdownSearchTerms}
@@ -341,8 +426,11 @@ const Categories = () => {
                   label="Desserts"
                   icon="🍰"
                   selected={selectedDesserts}
-                  setSelected={setSelectedDesserts}
-                  options={menuItems}
+                  setSelected={(newSelected) => {
+                    setSelectedDesserts(newSelected);
+                    updateSelection('dessert', newSelected, menuItems.filter(i => i.category === 'Dessert'), setUnselectedDesserts);
+                  }}
+                  options={menuItems.filter(i => i.category === 'Dessert')}
                   categoryKey="dessert"
                   searchTerms={dropdownSearchTerms}
                   setSearchTerms={setDropdownSearchTerms}
@@ -353,8 +441,11 @@ const Categories = () => {
                   label="Rice & Bread"
                   icon="🍚"
                   selected={selectedBreadRice}
-                  setSelected={setSelectedBreadRice}
-                  options={menuItems}
+                  setSelected={(newSelected) => {
+                    setSelectedBreadRice(newSelected);
+                    updateSelection('breadRice', newSelected, menuItems.filter(i => i.category === 'Rice & Bread'), setUnselectedBreadRice);
+                  }}
+                  options={menuItems.filter(i => i.category === 'Rice & Bread')}
                   categoryKey="breadRice"
                   searchTerms={dropdownSearchTerms}
                   setSearchTerms={setDropdownSearchTerms}

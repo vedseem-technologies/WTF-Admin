@@ -7,12 +7,18 @@ import { getThumbnail } from "../../../utils/imageOptimizer";
 import "./MenuItems.css";
 
 const MENU_CATEGORIES = [
-  { id: 1, name: "Starter", icon: "🥗" },
-  { id: 2, name: "Main Course", icon: "🍛" },
-  { id: 3, name: "Bread & Rice", icon: "🍚" },
-  { id: 4, name: "Dessert", icon: "🍰" },
-  { id: 5, name: "Live Services", icon: "👨‍🍳" },
+  { id: "Starter", name: "Starter", icon: "🥗" },
+  { id: "Main Course", name: "Main Course", icon: "🍛" },
+  { id: "Rice & Bread", name: "Rice & Bread", icon: "🍚" },
+  { id: "Dessert", name: "Dessert", icon: "🍰" },
 ];
+
+const LEGACY_CATEGORY_MAP = {
+  1: "Starter",
+  2: "Main Course",
+  3: "Rice & Bread",
+  4: "Dessert"
+};
 
 const MenuItems = ({ categoryId = null, titleOverride = null }) => {
   const {
@@ -23,7 +29,12 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
     updateMenuItem,
     deleteMenuItem,
     toggleMenuItemActive,
+    refreshMenuItems,
   } = useData();
+
+  useEffect(() => {
+    refreshMenuItems();
+  }, []);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -55,7 +66,7 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
         name: item.name,
         image: item.image,
         type: item.type,
-        category: item.category,
+        category: LEGACY_CATEGORY_MAP[item.category] || item.category,
         active: item.active,
         people: item.people,
         quantity: item.quantity,
@@ -107,12 +118,16 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
 
     const lines = bulkData.trim().split("\n");
     const items = lines.map((line) => {
-      const [name, catId, type, quantity, measurement, unitPrice] = line
+      const [name, catName, type, quantity, measurement, unitPrice] = line
         .split(",")
         .map((s) => s.trim());
+
+      // Validate category
+      const matchedCategory = MENU_CATEGORIES.find(c => c.name.toLowerCase() === (catName || "").toLowerCase()) || MENU_CATEGORIES[0];
+
       return {
         name,
-        category: parseInt(catId) || categoryId || MENU_CATEGORIES[0].id,
+        category: matchedCategory.id,
         type: type || "Veg",
         quantity: parseFloat(quantity) || 1,
         measurement: measurement || "kg",
@@ -134,7 +149,9 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesCategory =
-      categoryFilter === "all" || item.category === parseInt(categoryFilter);
+      categoryFilter === "all" ||
+      item.category === categoryFilter ||
+      LEGACY_CATEGORY_MAP[item.category] === categoryFilter;
     const matchesType = typeFilter === "all" || item.type === typeFilter;
     const matchesActive =
       activeFilter === "all" ||
@@ -184,6 +201,7 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
               <tr>
                 <th>Image</th>
                 <th>Item Name</th>
+                <th>Category</th>
                 <th>Type</th>
                 <th>Quantity</th>
                 <th>Measurement</th>
@@ -208,6 +226,11 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                     </div>
                   </td>
                   <td className="font-semibold">{item.name}</td>
+                  <td>
+                    <span className="badge badge-info">
+                      {LEGACY_CATEGORY_MAP[item.category] || item.category || "-"}
+                    </span>
+                  </td>
                   <td>
                     <span
                       className={`badge badge-${item.type === "Veg" ? "success" : "danger"}`}
@@ -274,6 +297,26 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                 }
                 required
               />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Category *</label>
+              <select
+                className="form-select"
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                required
+              >
+                {MENU_CATEGORIES.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.icon} {cat.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -435,8 +478,8 @@ Jeera Rice, 3, Veg, 200, kg, 60"
               Measurement (kg/pcs), UnitPrice
             </p>
             <p className="form-help">
-              Category IDs:{" "}
-              {MENU_CATEGORIES.map((c) => `${c.id}=${c.name}`).join(", ")}
+              Category Names:{" "}
+              {MENU_CATEGORIES.map((c) => c.name).join(", ")}
             </p>
           </div>
 
