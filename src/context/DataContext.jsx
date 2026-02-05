@@ -36,6 +36,8 @@ export const DataProvider = ({ children }) => {
   const [packages, setPackages] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [events, setEvents] = useState([]);
+  const [serviceConfigs, setServiceConfigs] = useState({});
+  const [serviceSelections, setServiceSelections] = useState({});
 
   const [loadingBlogs, setLoadingBlogs] = useState(true);
   const [loadingPopularItems, setLoadingPopularItems] = useState(true);
@@ -147,6 +149,31 @@ export const DataProvider = ({ children }) => {
       }
     };
     fetchServices();
+  }, []);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/categories`,
+        );
+        if (Array.isArray(response.data)) {
+          setCategories(response.data);
+        } else {
+          console.error(
+            "Fetch categories response is not an array:",
+            response.data,
+          );
+          setCategories([]);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -373,11 +400,9 @@ export const DataProvider = ({ children }) => {
     setTestimonials([optimisticTestimonial, ...testimonials]);
 
     try {
-      const imageUrl = await handleImageUpload(testimonial.image);
-      const testimonialWithUrl = { ...testimonial, image: imageUrl };
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/testimonials`,
-        testimonialWithUrl,
+        testimonial,
       );
       setTestimonials((prev) =>
         prev.map((t) => (t._id === tempId ? response.data : t)),
@@ -397,14 +422,9 @@ export const DataProvider = ({ children }) => {
     );
 
     try {
-      let imageUrl = updatedData.image;
-      if (updatedData.image && updatedData.image.startsWith("data:image")) {
-        imageUrl = await handleImageUpload(updatedData.image);
-      }
-      const dataWithUrl = { ...updatedData, image: imageUrl };
       const response = await axios.put(
         `${import.meta.env.VITE_BACKEND_URL}/api/testimonials/${id}`,
-        dataWithUrl,
+        updatedData,
       );
       setTestimonials((prev) =>
         prev.map((t) => (t._id === id ? response.data : t)),
@@ -437,11 +457,9 @@ export const DataProvider = ({ children }) => {
     setEvents([optimisticEvent, ...events]);
 
     try {
-      const imageUrl = await handleImageUpload(event.image);
-      const eventWithUrl = { ...event, image: imageUrl };
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/events`,
-        eventWithUrl,
+        event,
       );
       setEvents((prev) =>
         prev.map((e) => (e._id === tempId ? response.data : e)),
@@ -459,14 +477,9 @@ export const DataProvider = ({ children }) => {
     setEvents(events.map((e) => (e._id === id ? { ...e, ...updatedData } : e)));
 
     try {
-      let imageUrl = updatedData.image;
-      if (updatedData.image && updatedData.image.startsWith("data:image")) {
-        imageUrl = await handleImageUpload(updatedData.image);
-      }
-      const dataWithUrl = { ...updatedData, image: imageUrl };
       const response = await axios.put(
         `${import.meta.env.VITE_BACKEND_URL}/api/events/${id}`,
-        dataWithUrl,
+        updatedData,
       );
       setEvents((prev) => prev.map((e) => (e._id === id ? response.data : e)));
     } catch (error) {
@@ -1323,6 +1336,238 @@ export const DataProvider = ({ children }) => {
     getMenuCategoryById,
     progress,
     setProgress,
+
+    // Categories
+    categories,
+    loadingCategories,
+    addCategory: async (category) => {
+      const tempId = `temp-${Date.now()}`;
+      const optimisticCategory = { ...category, _id: tempId, createdAt: new Date() };
+      setCategories([optimisticCategory, ...categories]);
+
+      try {
+        const imageUrl = await handleImageUpload(category.image);
+        const categoryWithUrl = { ...category, image: imageUrl };
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/api/categories`,
+          categoryWithUrl,
+        );
+        setCategories((prev) => prev.map((c) => (c._id === tempId ? response.data : c)));
+        return response.data;
+      } catch (error) {
+        setCategories((prev) => prev.filter((c) => c._id !== tempId));
+        console.error("Error adding category:", error);
+        alert("Failed to add category.");
+      }
+    },
+    updateCategory: async (id, updatedData) => {
+      const originalCategories = [...categories];
+      setCategories(categories.map((c) => (c._id === id ? { ...c, ...updatedData } : c)));
+
+      try {
+        let imageUrl = updatedData.image;
+        if (updatedData.image && updatedData.image.startsWith("data:image")) {
+          imageUrl = await handleImageUpload(updatedData.image);
+        }
+        const dataWithUrl = { ...updatedData, image: imageUrl };
+        const response = await axios.put(
+          `${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}`,
+          dataWithUrl,
+        );
+        setCategories((prev) => prev.map((c) => (c._id === id ? response.data : c)));
+        return response.data;
+      } catch (error) {
+        setCategories(originalCategories);
+        console.error("Error updating category:", error);
+        alert("Failed to update category.");
+      }
+    },
+    deleteCategory: async (id) => {
+      try {
+        setProgress(30);
+        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}`);
+        setCategories(categories.filter((c) => c._id !== id));
+        setProgress(100);
+      } catch (error) {
+        console.error("Error deleting category:", error);
+        setProgress(100);
+        if (error.response?.data?.activeServices > 0) {
+          alert(`Cannot delete category with ${error.response.data.activeServices} active services`);
+        } else {
+          alert("Failed to delete category.");
+        }
+      }
+    },
+    toggleCategoryActive: async (id) => {
+      const category = categories.find((c) => c._id === id);
+      if (category) {
+        try {
+          const response = await axios.patch(
+            `${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}/toggle-active`,
+          );
+          setCategories(categories.map((c) => (c._id === id ? response.data : c)));
+        } catch (error) {
+          console.error("Error toggling category status:", error);
+        }
+      }
+    },
+
+    // Services
+    services,
+    loadingServices,
+    serviceConfigs,
+    serviceSelections,
+    addService: async (service, initialConfig) => {
+      const tempId = `temp-${Date.now()}`;
+      const optimisticService = { ...service, _id: tempId, createdAt: new Date() };
+      setServices([optimisticService, ...services]);
+
+      try {
+        const uploadedImages = await Promise.all(
+          (service.images || []).map(async (img) => {
+            if (img.url && img.url.startsWith('data:image')) {
+              const uploadedUrl = await handleImageUpload(img.url);
+              return { ...img, url: uploadedUrl };
+            }
+            return img;
+          })
+        );
+
+        const serviceWithImages = { ...service, images: uploadedImages };
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/api/services`,
+          serviceWithImages,
+        );
+
+        setServices((prev) => prev.map((s) => (s._id === tempId ? response.data : s)));
+
+        if (initialConfig) {
+          await axios.put(
+            `${import.meta.env.VITE_BACKEND_URL}/api/service-config/${response.data._id}`,
+            initialConfig,
+          );
+        }
+
+        return response.data;
+      } catch (error) {
+        setServices((prev) => prev.filter((s) => s._id !== tempId));
+        console.error("Error adding service:", error);
+        alert("Failed to add service.");
+      }
+    },
+    updateService: async (id, updatedData) => {
+      const originalServices = [...services];
+      setServices(services.map((s) => (s._id === id ? { ...s, ...updatedData } : s)));
+
+      try {
+        let updatedImages = updatedData.images;
+        if (updatedData.images) {
+          updatedImages = await Promise.all(
+            updatedData.images.map(async (img) => {
+              if (img.url && img.url.startsWith('data:image')) {
+                const uploadedUrl = await handleImageUpload(img.url);
+                return { ...img, url: uploadedUrl };
+              }
+              return img;
+            })
+          );
+        }
+
+        const dataWithImages = { ...updatedData, images: updatedImages };
+        const response = await axios.put(
+          `${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`,
+          dataWithImages,
+        );
+        setServices((prev) => prev.map((s) => (s._id === id ? response.data : s)));
+        return response.data;
+      } catch (error) {
+        setServices(originalServices);
+        console.error("Error updating service:", error);
+        alert("Failed to update service.");
+      }
+    },
+    deleteService: async (id) => {
+      try {
+        setProgress(30);
+        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`);
+        setServices(services.filter((s) => s._id !== id));
+        setProgress(100);
+      } catch (error) {
+        console.error("Error deleting service:", error);
+        setProgress(100);
+        alert("Failed to delete service.");
+      }
+    },
+    toggleServiceActive: async (id) => {
+      try {
+        const response = await axios.patch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/services/${id}/toggle-active`,
+        );
+        setServices(services.map((s) => (s._id === id ? response.data : s)));
+      } catch (error) {
+        console.error("Error toggling service status:", error);
+      }
+    },
+    toggleServiceFeatured: async (id) => {
+      try {
+        const response = await axios.patch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/services/${id}/toggle-featured`,
+        );
+        setServices(services.map((s) => (s._id === id ? response.data : s)));
+      } catch (error) {
+        console.error("Error toggling featured status:", error);
+      }
+    },
+    getServiceConfig: async (serviceId) => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/service-config/${serviceId}`,
+        );
+        setServiceConfigs(prev => ({ ...prev, [serviceId]: response.data }));
+        return response.data;
+      } catch (error) {
+        console.error("Error fetching service config:", error);
+        return null;
+      }
+    },
+    updateServiceConfig: async (serviceId, config) => {
+      try {
+        const response = await axios.put(
+          `${import.meta.env.VITE_BACKEND_URL}/api/service-config/${serviceId}`,
+          config,
+        );
+        setServiceConfigs(prev => ({ ...prev, [serviceId]: response.data }));
+        return response.data;
+      } catch (error) {
+        console.error("Error updating service config:", error);
+        alert("Failed to update configuration.");
+      }
+    },
+    getServiceSelection: async (serviceId) => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/service-selection/${serviceId}`,
+        );
+        setServiceSelections(prev => ({ ...prev, [serviceId]: response.data }));
+        return response.data;
+      } catch (error) {
+        console.error("Error fetching service selection:", error);
+        return null;
+      }
+    },
+    saveServiceSelection: async (serviceId, selection) => {
+      try {
+        const response = await axios.put(
+          `${import.meta.env.VITE_BACKEND_URL}/api/service-selection/${serviceId}`,
+          selection,
+        );
+        setServiceSelections(prev => ({ ...prev, [serviceId]: response.data }));
+        return response.data;
+      } catch (error) {
+        console.error("Error saving service selection:", error);
+        alert("Failed to save selection.");
+      }
+    },
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

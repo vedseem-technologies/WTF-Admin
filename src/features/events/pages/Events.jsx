@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useData } from "../../../context/DataContext";
 import Modal from "../../../components/ui/Modal";
-import ImageUpload from "../../../components/ui/ImageUpload";
-import "../../blogs/pages/Blogs.css"; // Reusing Blogs CSS for similar layout if needed
+
+import "../../blogs/pages/Blogs.css";
 
 const Events = () => {
   const { events, loadingEvents, addEvent, updateEvent, deleteEvent } =
@@ -11,6 +11,7 @@ const Events = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingEvent, setEditingEvent] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -19,7 +20,6 @@ const Events = () => {
     description: "",
     type: "Festival",
     status: "Upcoming",
-    image: "",
   });
 
   const handleOpenModal = (event = null) => {
@@ -32,7 +32,6 @@ const Events = () => {
         description: event.description,
         type: event.type || "Festival",
         status: event.status || "Upcoming",
-        image: event.image || "",
       });
     } else {
       setEditingEvent(null);
@@ -43,7 +42,6 @@ const Events = () => {
         description: "",
         type: "Festival",
         status: "Upcoming",
-        image: "",
       });
     }
     setIsModalOpen(true);
@@ -59,12 +57,13 @@ const Events = () => {
       description: "",
       type: "Festival",
       status: "Upcoming",
-      image: "",
     });
+    setIsSubmitting(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       if (editingEvent) {
         await updateEvent(editingEvent._id, formData);
@@ -74,6 +73,9 @@ const Events = () => {
       handleCloseModal();
     } catch (error) {
       console.error("Error saving event:", error);
+      alert("Failed to save event. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -83,107 +85,152 @@ const Events = () => {
         await deleteEvent(id);
       } catch (error) {
         console.error("Error deleting event:", error);
+        alert("Failed to delete event.");
       }
     }
   };
 
-  const handleImageChange = (image) => {
-    setFormData({ ...formData, image });
-  };
+
 
   const filteredEvents = events.filter(
     (event) =>
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.location?.toLowerCase().includes(searchTerm.toLowerCase()),
+      (event.location &&
+        event.location.toLowerCase().includes(searchTerm.toLowerCase())),
   );
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Upcoming":
+        return "bg-green-100 text-green-800";
+      case "Limited Seats":
+        return "bg-yellow-100 text-yellow-800";
+      case "Open for All":
+        return "bg-blue-100 text-blue-800";
+      case "Past":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   if (loadingEvents) {
-    return <div className="loading-state">Loading events...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-xl text-gray-500">Loading events...</div>
+      </div>
+    );
   }
 
   return (
     <div className="page-container">
-      <div className="page-filters">
-        <input
-          type="text"
-          className="form-control search-input"
-          placeholder="🔍 Search events..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <div className="filter-buttons" style={{ marginLeft: "auto" }}>
-          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-            + Add New Event
+      <div className="page-header mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Events</h1>
+        <p className="text-gray-600">
+          Manage your upcoming and past events.
+        </p>
+      </div>
+
+      <div className="page-filters flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
+        <div className="relative w-full max-w-md">
+          <input
+            type="text"
+            className="form-control search-input pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            placeholder="Search events by title or location..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+        </div>
+        <div className="filter-buttons ml-4">
+          <button
+            className="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors flex items-center shadow-md"
+            onClick={() => handleOpenModal()}
+          >
+            <span className="mr-2">+</span> Add New Event
           </button>
         </div>
       </div>
 
-      <div className="table-container">
-        <table className="table">
-          <thead>
+      <div className="table-container bg-white rounded-lg shadow-sm overflow-hidden">
+        <table className="table w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th>Image</th>
-              <th>Title</th>
-              <th>Date</th>
-              <th>Location</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Event Info
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date & Location
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Type
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-200">
             {filteredEvents.map((event) => (
-              <tr key={event._id}>
-                <td>
-                  <img
-                    src={event.image || "https://via.placeholder.com/60"}
-                    alt={event.title}
-                    className="table-thumbnail"
-                    style={{
-                      width: "60px",
-                      height: "40px",
-                      borderRadius: "4px",
-                      objectFit: "cover",
-                    }}
-                  />
+              <tr
+                key={event._id}
+                className="hover:bg-gray-50 transition-colors"
+              >
+                <td className="px-6 py-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {event.title}
+                    </div>
+                    <div className="text-sm text-gray-500 truncate max-w-xs">
+                      {event.description}
+                    </div>
+                  </div>
                 </td>
-                <td className="font-medium">{event.title}</td>
-                <td>{event.date}</td>
-                <td>{event.location}</td>
-                <td>
-                  <span className="badge badge-secondary">{event.type}</span>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{event.date}</div>
+                  <div className="text-sm text-gray-500">{event.location}</div>
                 </td>
-                <td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                    {event.type}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`badge ${event.status === "Upcoming" ? "badge-success" : "badge-warning"}`}
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                      event.status,
+                    )}`}
                   >
                     {event.status}
                   </span>
                 </td>
-                <td>
-                  <div className="action-buttons">
-                    <button
-                      className="btn btn-sm btn-outline"
-                      onClick={() => handleOpenModal(event)}
-                      style={{ marginRight: "8px" }}
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(event._id)}
-                    >
-                      🗑️ Delete
-                    </button>
-                  </div>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    className="text-blue-600 hover:text-blue-900 mr-4 transition-colors"
+                    onClick={() => handleOpenModal(event)}
+                    title="Edit"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className="text-red-600 hover:text-red-900 transition-colors"
+                    onClick={() => handleDelete(event._id)}
+                    title="Delete"
+                  >
+                    🗑️
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         {filteredEvents.length === 0 && (
-          <div className="empty-state">
-            <p>No events found</p>
+          <div className="empty-state p-12 text-center text-gray-500">
+            <div className="text-4xl mb-4">📅</div>
+            <p className="text-lg">No events found</p>
           </div>
         )}
       </div>
@@ -193,21 +240,16 @@ const Events = () => {
         onClose={handleCloseModal}
         title={editingEvent ? "Edit Event" : "Add New Event"}
       >
-        <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-group">
-            <label>Event Image</label>
-            <ImageUpload
-              image={formData.image}
-              onImageChange={handleImageChange}
-              onRemove={() => setFormData({ ...formData, image: "" })}
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="modal-form space-y-4">
+
 
           <div className="form-group">
-            <label>Title</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Title <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
-              className="form-control"
+              className="form-control w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={formData.title}
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
@@ -216,66 +258,80 @@ const Events = () => {
             />
           </div>
 
-          <div className="form-group">
-            <label>Date</label>
-            <input
-              type="text"
-              className="form-control"
-              value={formData.date}
-              onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value })
-              }
-              placeholder="e.g. February 15-17, 2026"
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={formData.date}
+                onChange={(e) =>
+                  setFormData({ ...formData, date: e.target.value })
+                }
+                placeholder="e.g. Feb 15-17, 2026"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Location
+              </label>
+              <input
+                type="text"
+                className="form-control w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={formData.location}
+                onChange={(e) =>
+                  setFormData({ ...formData, location: e.target.value })
+                }
+                placeholder="e.g. Central Park"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Type
+              </label>
+              <input
+                type="text"
+                className="form-control w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={formData.type}
+                onChange={(e) =>
+                  setFormData({ ...formData, type: e.target.value })
+                }
+                placeholder="e.g. Festival"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                className="form-control w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
+              >
+                <option value="Upcoming">Upcoming</option>
+                <option value="Limited Seats">Limited Seats</option>
+                <option value="Open for All">Open for All</option>
+                <option value="Past">Past</option>
+              </select>
+            </div>
           </div>
 
           <div className="form-group">
-            <label>Location</label>
-            <input
-              type="text"
-              className="form-control"
-              value={formData.location}
-              onChange={(e) =>
-                setFormData({ ...formData, location: e.target.value })
-              }
-              placeholder="e.g. Central Park, Delhi"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Type</label>
-            <input
-              type="text"
-              className="form-control"
-              value={formData.type}
-              onChange={(e) =>
-                setFormData({ ...formData, type: e.target.value })
-              }
-              placeholder="e.g. Festival, Tasting Event"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Status</label>
-            <select
-              className="form-control"
-              value={formData.status}
-              onChange={(e) =>
-                setFormData({ ...formData, status: e.target.value })
-              }
-            >
-              <option value="Upcoming">Upcoming</option>
-              <option value="Limited Seats">Limited Seats</option>
-              <option value="Open for All">Open for All</option>
-              <option value="Past">Past</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
             <textarea
-              className="form-control"
+              className="form-control w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
@@ -285,16 +341,29 @@ const Events = () => {
             />
           </div>
 
-          <div className="modal-actions">
+          <div className="modal-actions flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
             <button
               type="button"
-              className="btn btn-outline"
+              className="btn btn-secondary"
               onClick={handleCloseModal}
+              disabled={isSubmitting}
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
-              {editingEvent ? "Save Changes" : "Add Event"}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="opacity-75 mr-2">Saving...</span>
+                </>
+              ) : editingEvent ? (
+                "Save Changes"
+              ) : (
+                "Add Event"
+              )}
             </button>
           </div>
         </form>
