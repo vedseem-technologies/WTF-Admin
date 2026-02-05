@@ -38,6 +38,11 @@ export const DataProvider = ({ children }) => {
   const [events, setEvents] = useState([]);
   const [serviceConfigs, setServiceConfigs] = useState({});
   const [serviceSelections, setServiceSelections] = useState({});
+  const [carouselImages, setCarouselImages] = useState([]);
+  const [bannerImages, setBannerImages] = useState([]);
+
+  const [loadingCarousel, setLoadingCarousel] = useState(true);
+  const [loadingBanner, setLoadingBanner] = useState(true);
 
   const [loadingBlogs, setLoadingBlogs] = useState(true);
   const [loadingPopularItems, setLoadingPopularItems] = useState(true);
@@ -176,30 +181,7 @@ export const DataProvider = ({ children }) => {
     fetchCategories();
   }, []);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoadingCategories(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/categories`,
-        );
-        if (Array.isArray(response.data)) {
-          setCategories(response.data);
-        } else {
-          console.error(
-            "Fetch categories response is not an array:",
-            response.data,
-          );
-          setCategories([]);
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
-    fetchCategories();
-  }, []);
+  // Duplicate fetchCategories removed
 
   useEffect(() => {
     const fetchYoutubeLinks = async () => {
@@ -223,7 +205,6 @@ export const DataProvider = ({ children }) => {
         setLoadingYoutubeLinks(false);
       }
     };
-    fetchYoutubeLinks();
     fetchYoutubeLinks();
   }, []);
 
@@ -250,6 +231,41 @@ export const DataProvider = ({ children }) => {
       }
     };
     fetchRangeMenus();
+    fetchRangeMenus();
+  }, []);
+
+  useEffect(() => {
+    const fetchCarouselImages = async () => {
+      try {
+        setLoadingCarousel(true);
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/carousel`
+        );
+        setCarouselImages(response.data);
+      } catch (error) {
+        console.error("Error fetching carousel images:", error);
+      } finally {
+        setLoadingCarousel(false);
+      }
+    };
+    fetchCarouselImages();
+  }, []);
+
+  useEffect(() => {
+    const fetchBannerImages = async () => {
+      try {
+        setLoadingBanner(true);
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/banner`
+        );
+        setBannerImages(response.data);
+      } catch (error) {
+        console.error("Error fetching banner images:", error);
+      } finally {
+        setLoadingBanner(false);
+      }
+    };
+    fetchBannerImages();
   }, []);
 
   const fetchMenuItems = async () => {
@@ -1568,7 +1584,62 @@ export const DataProvider = ({ children }) => {
         alert("Failed to save selection.");
       }
     },
+
+    // Carousel
+    carouselImages,
+    loadingCarousel,
+    addCarouselImage: async (image) => {
+      try {
+        const imageUrl = await handleImageUpload(image);
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/api/carousel`,
+          { image: imageUrl }
+        );
+        setCarouselImages([response.data, ...carouselImages]);
+        return response.data;
+      } catch (error) {
+        console.error("Error adding carousel image:", error);
+        alert("Failed to add carousel image.");
+      }
+    },
+    deleteCarouselImage: async (id) => {
+      try {
+        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/carousel/${id}`);
+        setCarouselImages(carouselImages.filter((img) => img._id !== id));
+      } catch (error) {
+        console.error("Error deleting carousel image:", error);
+        alert("Failed to delete carousel image.");
+      }
+    },
+
+    // Banner
+    bannerImages,
+    loadingBanner,
+    addBannerImage: async (image) => {
+      try {
+        // Direct upload, skipping Cloudinary
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/api/banner`,
+          { image }
+        );
+        setBannerImages([response.data, ...bannerImages]);
+        return response.data;
+      } catch (error) {
+        console.error("Error adding banner image:", error);
+        alert("Failed to add banner image.");
+      }
+    },
+    deleteBannerImage: async (id) => {
+      try {
+        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/banner/${id}`);
+        setBannerImages(bannerImages.filter((img) => img._id !== id));
+      } catch (error) {
+        console.error("Error deleting banner image:", error);
+        alert("Failed to delete banner image.");
+      }
+    },
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };
+

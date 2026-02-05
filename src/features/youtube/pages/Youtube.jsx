@@ -66,29 +66,29 @@ const Youtube = () => {
                         <tbody>
                             {youtubeLinks.map((link, index) => {
                                 return (
-                                  <tr key={link._id}>
-                                    <td>{index + 1}</td>
-                                    <td>
-                                      <a
-                                        href={link.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="youtube-link"
-                                      >
-                                        {link.url}
-                                      </a>
-                                    </td>
-                                    <td>
-                                      <div className="action-buttons">
-                                        <button
-                                          className="btn btn-sm btn-danger"
-                                          onClick={() => handleDelete(blog._id)}
-                                        >
-                                          🗑️
-                                        </button>
-                                      </div>
-                                    </td>
-                                  </tr>
+                                    <tr key={link._id}>
+                                        <td>{index + 1}</td>
+                                        <td>
+                                            <a
+                                                href={link.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="youtube-link"
+                                            >
+                                                {link.url}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <div className="action-buttons">
+                                                <button
+                                                    className="btn btn-sm btn-danger"
+                                                    onClick={() => handleDelete(link._id)}
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 );
                             })}
                         </tbody>

@@ -19,6 +19,8 @@ const Sidebar = () => {
     { path: "/testimonials", icon: "💬", label: "Testimonials" },
     { path: "/events", icon: "📅", label: "Events" },
     { path: "/youtube", icon: "🎥", label: "YouTube" },
+    { path: "/carousel", icon: "📷", label: "Carousel" },
+    { path: "/banner", icon: "🖼️", label: "Banner" },
   ];
 
   return (
