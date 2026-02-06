@@ -1,15 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "../../../context/DataContext";
 import Modal from "../../../components/ui/Modal";
-
+import useCursorPagination from "../../../hooks/useCursorPagination";
 import "../../blogs/pages/Blogs.css";
 
 const Events = () => {
-  const { events, loadingEvents, addEvent, updateEvent, deleteEvent } =
-    useData();
+  const { addEvent, updateEvent, deleteEvent } = useData();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  // Debounce search
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+
+  const {
+    data: events,
+    loading: loadingEvents,
+    pageInfo,
+    handleNext,
+    handlePrev,
+    refresh: refreshEvents
+  } = useCursorPagination('/api/events', {
+    limit: 12,
+    filters: {
+      search: debouncedSearchTerm || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      type: typeFilter !== 'all' ? typeFilter : undefined
+    }
+  });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [editingEvent, setEditingEvent] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -70,6 +96,7 @@ const Events = () => {
       } else {
         await addEvent(formData);
       }
+      refreshEvents();
       handleCloseModal();
     } catch (error) {
       console.error("Error saving event:", error);
@@ -83,6 +110,7 @@ const Events = () => {
     if (window.confirm("Are you sure you want to delete this event?")) {
       try {
         await deleteEvent(id);
+        refreshEvents();
       } catch (error) {
         console.error("Error deleting event:", error);
         alert("Failed to delete event.");
@@ -90,14 +118,6 @@ const Events = () => {
     }
   };
 
-
-
-  const filteredEvents = events.filter(
-    (event) =>
-      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (event.location &&
-        event.location.toLowerCase().includes(searchTerm.toLowerCase())),
-  );
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -113,14 +133,6 @@ const Events = () => {
         return "bg-gray-100 text-gray-800";
     }
   };
-
-  if (loadingEvents) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-xl text-gray-500">Loading events...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="page-container">
@@ -153,81 +165,108 @@ const Events = () => {
       </div>
 
       <div className="table-container bg-white rounded-lg shadow-sm overflow-hidden">
-        <table className="table w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Event Info
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date & Location
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredEvents.map((event) => (
-              <tr
-                key={event._id}
-                className="hover:bg-gray-50 transition-colors"
+        {loadingEvents && events.length === 0 ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-xl text-gray-500">Loading events...</div>
+          </div>
+        ) : events.length > 0 ? (
+          <>
+            <table className="table w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Event Info
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date & Location
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {events.map((event) => (
+                  <tr
+                    key={event._id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {event.title}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                          {event.description}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{event.date}</div>
+                      <div className="text-sm text-gray-500">{event.location}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        {event.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                          event.status,
+                        )}`}
+                      >
+                        {event.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        className="text-blue-600 hover:text-blue-900 mr-4 transition-colors"
+                        onClick={() => handleOpenModal(event)}
+                        title="Edit"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="text-red-600 hover:text-red-900 transition-colors"
+                        onClick={() => handleDelete(event._id)}
+                        title="Delete"
+                      >
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Pagination Controls */}
+            <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+              <button
+                onClick={handlePrev}
+                disabled={!pageInfo.hasPrevPage || loadingEvents}
+                className="btn btn-outline"
               >
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {event.title}
-                    </div>
-                    <div className="text-sm text-gray-500 truncate max-w-xs">
-                      {event.description}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{event.date}</div>
-                  <div className="text-sm text-gray-500">{event.location}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                    {event.type}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                      event.status,
-                    )}`}
-                  >
-                    {event.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    className="text-blue-600 hover:text-blue-900 mr-4 transition-colors"
-                    onClick={() => handleOpenModal(event)}
-                    title="Edit"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    className="text-red-600 hover:text-red-900 transition-colors"
-                    onClick={() => handleDelete(event._id)}
-                    title="Delete"
-                  >
-                    🗑️
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filteredEvents.length === 0 && (
+                ⬅️ Previous
+              </button>
+              <span className="text-gray-500">
+                {loadingEvents ? 'Loading...' : ''}
+              </span>
+              <button
+                onClick={handleNext}
+                disabled={!pageInfo.hasNextPage || loadingEvents}
+                className="btn btn-outline"
+              >
+                Next ➡️
+              </button>
+            </div>
+          </>
+        ) : (
           <div className="empty-state p-12 text-center text-gray-500">
             <div className="text-4xl mb-4">📅</div>
             <p className="text-lg">No events found</p>

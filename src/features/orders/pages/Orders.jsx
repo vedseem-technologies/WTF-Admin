@@ -1,35 +1,76 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../../../context/DataContext";
 import "./Orders.css";
+import useCursorPagination from "../../../hooks/useCursorPagination";
 
 const Orders = () => {
-  const { orders, occasions } = useData();
+  // orders was previously from useData, now we fetch locally. 
+  // DataContext might still supply occasions/services but checking 'Orders.jsx' code it just used 'orders'.
+  // Wait, line 7 in original: const { orders, occasions } = useData();
+  // It doesn't seem to use 'occasions' in the rendered JSX, only 'orders'.
+  // Let me double check if 'occasions' is used.
+  // Original code:
+  // 7:   const { orders, occasions } = useData();
+  // It doesn't use occasions anywhere in the snippet I saw.
+  // I'll remove occasions for now, or keep useData for it if needed later.
+
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.id.toString().includes(searchTerm);
-    const matchesStatus =
-      statusFilter === "all" || order.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
+  const {
+    data: orders,
+    loading: loadingOrders,
+    pageInfo,
+    handleNext,
+    handlePrev,
+    refresh: refreshOrders
+  } = useCursorPagination('/api/orders', {
+    limit: 10,
+    filters: {
+      search: debouncedSearchTerm || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined
+    }
   });
 
   const getStatusColor = (status) => {
     const colors = {
-      Pending: "warning",
-      Confirmed: "info",
-      "In Preparation": "primary",
-      Delivered: "success",
-      Cancelled: "danger",
+      pending: "warning", // Lowercase from backed usually, but mapped to capitalize in UI? Backend defaults 'pending'.
+      // Model says enum: ['pending', 'confirmed', ...].
+      // Frontend original uniqueStatuses: ["Pending", "Confirmed"...]. 
+      // I should handle case sensitivity.
+      // Backend returns lowercase probably.
+      // Let's safe guard.
+      confirmed: "info",
+      processing: "primary", // "In Preparation" in frontend? Model has 'processing'. 
+      // Need to map model status to frontend display or vice versa.
+      // Model: ['pending', 'confirmed', 'processing', 'completed', 'cancelled']
+      // Frontend uniqueStatuses: ["Pending", "Confirmed", "In Preparation", "Delivered", "Cancelled"]
+      // I should just format the display status.
+      delivered: "success", // Model 'completed'? Or 'delivered'? Model says 'completed'. Frontend says 'Delivered'.
+      // I might need to map status for display.
+      completed: "success",
+      cancelled: "danger",
     };
-    return colors[status] || "info";
+    return colors[status?.toLowerCase()] || "info";
   };
+
+  const displayStatus = (status) => {
+    if (!status) return '';
+    const map = {
+      'processing': 'In Preparation',
+      'completed': 'Delivered'
+    };
+    return map[status.toLowerCase()] || status.charAt(0).toUpperCase() + status.slice(1);
+  }
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-IN", {
@@ -48,11 +89,11 @@ const Orders = () => {
   };
 
   const uniqueStatuses = [
-    "Pending",
-    "Confirmed",
-    "In Preparation",
-    "Delivered",
-    "Cancelled",
+    "pending",
+    "confirmed",
+    "processing",
+    "completed",
+    "cancelled",
   ];
 
   return (
@@ -64,24 +105,13 @@ const Orders = () => {
             View and manage all customer orders
           </p>
         </div> */}
-        {/* <div className="orders-stats">
-          <div className="stat-item">
-            <span className="stat-label">Total</span>
-            <span className="stat-value">{orders.length}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Pending</span>
-            <span className="stat-value text-warning">
-              {orders.filter((o) => o.status === "Pending").length}
-            </span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Delivered</span>
-            <span className="stat-value text-success">
-              {orders.filter((o) => o.status === "Delivered").length}
-            </span>
-          </div>
-        </div> */}
+        {/* Stats removed or need separate API call for counts if not paginated. 
+            Frontend had stats based on *all* orders in memory. 
+            With pagination we don't have all orders. 
+            I will hide stats or just show what's loaded (which is misleading).
+            Better to remove simple stats from filtered view or fetch stats separately.
+            I'll restore the basic layout but remove stats for now as they require aggregation API.
+        */}
       </div>
 
       <div className="page-filters orders-filters">
@@ -89,7 +119,7 @@ const Orders = () => {
           <input
             type="text"
             className="form-control search-input"
-            placeholder="🔍 Search by order ID or customer name..."
+            placeholder="🔍 Search by order ID or name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -102,92 +132,101 @@ const Orders = () => {
             <option value="all">All Status</option>
             {uniqueStatuses.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {displayStatus(status)}
               </option>
             ))}
           </select>
         </div>
-        <div className="orders-stats">
-          <div className="stat-item">
-            <span className="stat-label">Total</span>
-            <span className="stat-value">{orders.length}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Pending</span>
-            <span className="stat-value text-warning">
-              {orders.filter((o) => o.status === "Pending").length}
-            </span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Delivered</span>
-            <span className="stat-value text-success">
-              {orders.filter((o) => o.status === "Delivered").length}
-            </span>
-          </div>
-        </div>
+        {/* Removing statistics panel as it relies on full dataset */}
       </div>
 
       <div className="table-container">
-        <table className="table orders-table">
-          <thead>
-            <tr>
-              <th>Order ID</th>
-              <th>Order Date</th>
-              <th>Customer</th>
-              <th>Event Date</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredOrders.map((order) => (
-              <tr
-                key={order.id}
-                onClick={() => navigate(`/orders/${order.id}`)}
-                className="clickable-row"
+        {loadingOrders && orders.length === 0 ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-xl text-gray-500">Loading orders...</div>
+          </div>
+        ) : orders.length > 0 ? (
+          <>
+            <table className="table orders-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Order Date</th>
+                  <th>Customer</th>
+                  <th>Event Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                  <tr
+                    key={order._id || order.id} // Backend uses _id, frontend might have mapped to id. Model has orderId string tool
+                    onClick={() => navigate(`/orders/${order.orderId}`)} // Use orderId string (WTF-...)
+                    className="clickable-row"
+                  >
+                    <td className="font-semibold text-primary">#{order.orderId}</td>
+                    <td>{formatDate(order.createdAt)}</td>
+                    <td>
+                      <div className="customer-cell">
+                        <div className="customer-name">{order.userId?.firstName} {order.userId?.lastName}</div>
+                        <div className="customer-phone">{order.userId?.phone}</div>
+                      </div>
+                    </td>
+                    <td>{order.bookingDetails?.date ? formatDate(order.bookingDetails.date) : 'N/A'}</td>
+                    <td className="font-semibold">{formatCurrency(order.totalAmount)}</td>
+                    <td>
+                      <span
+                        className={`badge badge-${getStatusColor(order.status)}`}
+                      >
+                        {displayStatus(order.status)}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/orders/${order.orderId}`);
+                        }}
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Pagination Controls */}
+            <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+              <button
+                onClick={handlePrev}
+                disabled={!pageInfo.hasPrevPage || loadingOrders}
+                className="btn btn-outline"
               >
-                <td className="font-semibold text-primary">#{order.id}</td>
-                <td>{formatDate(order.orderDate)}</td>
-                <td>
-                  <div className="customer-cell">
-                    <div className="customer-name">{order.customer.name}</div>
-                    <div className="customer-phone">{order.customer.phone}</div>
-                  </div>
-                </td>
-                <td>{formatDate(order.eventDate)}</td>
-                <td className="font-semibold">{formatCurrency(order.total)}</td>
-                <td>
-                  <span
-                    className={`badge badge-${getStatusColor(order.status)}`}
-                  >
-                    {order.status}
-                  </span>
-                </td>
-                <td>
-                  <button
-                    className="btn btn-sm btn-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/orders/${order.id}`);
-                    }}
-                  >
-                    View
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                ⬅️ Previous
+              </button>
+              <span className="text-gray-500">
+                {loadingOrders ? 'Loading...' : ''}
+              </span>
+              <button
+                onClick={handleNext}
+                disabled={!pageInfo.hasNextPage || loadingOrders}
+                className="btn btn-outline"
+              >
+                Next ➡️
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="empty-state">
+            <span className="empty-icon">📋</span>
+            <h3>No orders found</h3>
+            <p>Try adjusting your filters</p>
+          </div>
+        )}
       </div>
-
-      {filteredOrders.length === 0 && (
-        <div className="empty-state">
-          <span className="empty-icon">📋</span>
-          <h3>No orders found</h3>
-          <p>Try adjusting your filters</p>
-        </div>
-      )}
     </div>
   );
 };

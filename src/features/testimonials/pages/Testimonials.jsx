@@ -1,19 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "../../../context/DataContext";
 import Modal from "../../../components/ui/Modal";
-
+import useCursorPagination from "../../../hooks/useCursorPagination";
 
 const Testimonials = () => {
   const {
-    testimonials,
-    loadingTestimonials,
     addTestimonial,
     updateTestimonial,
     deleteTestimonial,
   } = useData();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  // Debounce search
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const {
+    data: testimonials,
+    loading: loadingTestimonials,
+    pageInfo,
+    handleNext,
+    handlePrev,
+    refresh: refreshTestimonials
+  } = useCursorPagination('/api/testimonials', {
+    limit: 12,
+    filters: {
+      search: debouncedSearchTerm || undefined
+    }
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -70,6 +89,7 @@ const Testimonials = () => {
       } else {
         await addTestimonial(formData);
       }
+      refreshTestimonials();
       handleCloseModal();
     } catch (error) {
       console.error("Error saving testimonial:", error);
@@ -83,28 +103,13 @@ const Testimonials = () => {
     if (window.confirm("Are you sure you want to delete this testimonial?")) {
       try {
         await deleteTestimonial(id);
+        refreshTestimonials();
       } catch (error) {
         console.error("Error deleting testimonial:", error);
         alert("Failed to delete testimonial.");
       }
     }
   };
-
-
-
-  const filteredTestimonials = testimonials.filter(
-    (testimonial) =>
-      testimonial.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      testimonial.role.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  if (loadingTestimonials) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-xl text-gray-500">Loading testimonials...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="page-container">
@@ -137,90 +142,116 @@ const Testimonials = () => {
       </div>
 
       <div className="table-container bg-white rounded-lg shadow-sm overflow-hidden">
-        <table className="table w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Client
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Review
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Rating
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredTestimonials.map((testimonial) => (
-              <tr
-                key={testimonial._id}
-                className="hover:bg-gray-50 transition-colors"
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {testimonial.name}
+        {loadingTestimonials && testimonials.length === 0 ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-xl text-gray-500">Loading testimonials...</div>
+          </div>
+        ) : testimonials.length > 0 ? (
+          <>
+            <table className="table w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Client
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Review
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Rating
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {testimonials.map((testimonial) => (
+                  <tr
+                    key={testimonial._id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {testimonial.name}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {testimonial.role}
-                </td>
-                <td className="px-6 py-4">
-                  <div
-                    className="text-sm text-gray-900 line-clamp-2"
-                    style={{
-                      maxWidth: "300px",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                    title={testimonial.text}
-                  >
-                    {testimonial.text}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {testimonial.date}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-500">
-                  {"⭐".repeat(testimonial.rating)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    className="text-blue-600 hover:text-blue-900 mr-4 transition-colors"
-                    onClick={() => handleOpenModal(testimonial)}
-                    title="Edit"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    className="text-red-600 hover:text-red-900 transition-colors"
-                    onClick={() => handleDelete(testimonial._id)}
-                    title="Delete"
-                  >
-                    🗑️
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filteredTestimonials.length === 0 && (
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {testimonial.role}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div
+                        className="text-sm text-gray-900 line-clamp-2"
+                        style={{
+                          maxWidth: "300px",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                        title={testimonial.text}
+                      >
+                        {testimonial.text}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {testimonial.date}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-500">
+                      {"⭐".repeat(testimonial.rating)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        className="text-blue-600 hover:text-blue-900 mr-4 transition-colors"
+                        onClick={() => handleOpenModal(testimonial)}
+                        title="Edit"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="text-red-600 hover:text-red-900 transition-colors"
+                        onClick={() => handleDelete(testimonial._id)}
+                        title="Delete"
+                      >
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Pagination Controls */}
+            <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+              <button
+                onClick={handlePrev}
+                disabled={!pageInfo.hasPrevPage || loadingTestimonials}
+                className="btn btn-outline"
+              >
+                ⬅️ Previous
+              </button>
+              <span className="text-gray-500">
+                {loadingTestimonials ? 'Loading...' : ''}
+              </span>
+              <button
+                onClick={handleNext}
+                disabled={!pageInfo.hasNextPage || loadingTestimonials}
+                className="btn btn-outline"
+              >
+                Next ➡️
+              </button>
+            </div>
+          </>
+        ) : (
           <div className="empty-state p-12 text-center text-gray-500">
             <div className="text-4xl mb-4">💬</div>
             <p className="text-lg">No testimonials found</p>

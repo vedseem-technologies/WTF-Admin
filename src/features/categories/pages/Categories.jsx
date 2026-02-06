@@ -6,19 +6,48 @@ import ImageUpload from "../../../components/ui/ImageUpload";
 import { getThumbnail } from "../../../utils/imageOptimizer";
 import NewMenuDropdown from "../../../components/ui/NewMenuDropdown";
 import "../../occasions/pages/Occasions.css"; // Reusing same styles
+import useCursorPagination from "../../../hooks/useCursorPagination";
 
 const Categories = () => {
   const {
-    categories,
-    loadingCategories,
     addCategory,
     updateCategory,
     deleteCategory,
     toggleCategoryActive,
-    menuItems,
     getCategoryMenuSelection,
     saveCategoryMenuSelection,
   } = useData();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  // Debounce search term to avoid too many API calls
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const [filter, setFilter] = useState("all");
+
+  const {
+    data: categories,
+    loading: loadingCategories,
+    pageInfo,
+    handleNext,
+    handlePrev,
+    refresh: refreshCategories
+  } = useCursorPagination('/api/categories', {
+    limit: 12,
+    filters: {
+      active: filter === 'active' ? true : (filter === 'inactive' ? false : undefined),
+      search: debouncedSearchTerm || undefined
+    }
+  });
+
+  // Fetch menu items for dropdowns (fetch all/large limit)
+  const { data: menuItems } = useCursorPagination('/api/menu-items', { limit: 1000, filters: { active: true } });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -27,8 +56,6 @@ const Categories = () => {
     image: "",
     active: true,
   });
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filter, setFilter] = useState("all");
 
   // Menu Selection State
   const [selectedStarters, setSelectedStarters] = useState([]);
@@ -107,6 +134,12 @@ const Categories = () => {
           setUnselectedDesserts(filterByCategory(mappedUnselectedDesserts, 'Dessert', 4));
           setUnselectedBreadRice(filterByCategory(mappedUnselectedBreadRice, 'Rice & Bread', 3));
 
+          // Debug: Category-wise filtered items (After Load)
+          console.log("Strictly Filtered Loaded Items:", {
+            starters: { selected: mappedSelectedStarters.length, unselected: mappedUnselectedStarters.length },
+            mains: { selected: mappedSelectedMain.length, unselected: mappedUnselectedMain.length },
+          });
+
         } else {
           // New category implementation fallback
           setUnselectedStarters(menuItems.filter(i => i.category === 'Starter' || i.category == 1));
@@ -181,6 +214,41 @@ const Categories = () => {
     setUnselected(newUnselected);
   };
 
+  const handleError = (error) => {
+    console.error("Action error:", error);
+    // Could add toaster here
+  };
+
+  const handleAddCategory = async (data) => {
+    try {
+      await addCategory(data);
+      refreshCategories();
+    } catch (e) { handleError(e); }
+  };
+
+  const handleUpdateCategory = async (id, data) => {
+    try {
+      await updateCategory(id, data);
+      refreshCategories();
+    } catch (e) { handleError(e); }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (window.confirm("Are you sure you want to delete this category?")) {
+      try {
+        await deleteCategory(id);
+        refreshCategories();
+      } catch (e) { handleError(e); }
+    }
+  };
+
+  const handleToggleCategory = async (id) => {
+    try {
+      await toggleCategoryActive(id);
+      refreshCategories();
+    } catch (e) { handleError(e); }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -188,6 +256,9 @@ const Categories = () => {
     let responseCategory;
 
     if (editingCategory) {
+      // Use DataContext function, but wait for it and then refresh
+      // NOTE: DataContext functions might not return promise that resolves to data correctly if I messed with them?
+      // Checking DataContext code... it uses axios and returns response.data.
       responseCategory = await updateCategory(editingCategory._id, formData);
       categoryId = editingCategory._id;
     } else {
@@ -196,6 +267,8 @@ const Categories = () => {
         categoryId = responseCategory._id;
       }
     }
+
+    refreshCategories();
 
     if (categoryId) {
       // Debug: Log state before constructing payload
@@ -223,25 +296,8 @@ const Categories = () => {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this category?")) {
-      deleteCategory(id);
-    }
+    handleDeleteCategory(id);
   };
-
-  const filteredCategories = categories
-    .filter((category) => {
-      const matchesSearch = category.title
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      const matchesFilter =
-        filter === "all" ||
-        (filter === "active" && category.active) ||
-        (filter === "inactive" && !category.active);
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a, b) =>
-      String(b.createdAt || b._id).localeCompare(String(a.createdAt || a._id)),
-    );
 
   return (
     <div className="page-container">
@@ -258,19 +314,19 @@ const Categories = () => {
             className={`filter-btn ${filter === "all" ? "active" : ""}`}
             onClick={() => setFilter("all")}
           >
-            All ({categories.length})
+            All
           </button>
           <button
             className={`filter-btn ${filter === "active" ? "active" : ""}`}
             onClick={() => setFilter("active")}
           >
-            Active ({categories.filter((c) => c.active).length})
+            Active
           </button>
           <button
             className={`filter-btn ${filter === "inactive" ? "active" : ""}`}
             onClick={() => setFilter("inactive")}
           >
-            Inactive ({categories.filter((c) => !c.active).length})
+            Inactive
           </button>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
             + Add Category
@@ -278,65 +334,88 @@ const Categories = () => {
         </div>
       </div>
 
-      {loadingCategories ? (
+      {loadingCategories && categories.length === 0 ? (
         <div className="loading-state">
           <h3>...loading</h3>
         </div>
-      ) : filteredCategories.length > 0 ? (
-        <div className="occasions-grid">
-          {filteredCategories.map((category) => (
-            <div
-              key={category._id}
-              className={`occasion-card ${!category.active ? "inactive" : ""}`}
-            >
-              <div className="occasion-image">
-                <img
-                  src={getThumbnail(category.image)}
-                  alt={category.title}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                  crossOrigin="anonymous"
-                />
-                {!category.active && (
-                  <div className="inactive-overlay">Inactive</div>
-                )}
-              </div>
-              <div className="occasion-content">
-                <h3 className="occasion-title">{category.title}</h3>
-                <div className="occasion-actions">
-                  <div className="occasion-toggle">
-                    <span className="toggle-label">Active</span>
-                    <Toggle
-                      checked={category.active}
-                      onChange={() => toggleCategoryActive(category._id)}
-                    />
-                  </div>
-                  <div className="occasion-buttons">
-                    <button
-                      className="btn btn-sm btn-outline"
-                      onClick={() => handleOpenModal(category)}
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(category._id)}
-                    >
-                      🗑️ Delete
-                    </button>
+      ) : categories.length > 0 ? (
+        <>
+          <div className="occasions-grid">
+            {categories.map((category) => (
+              <div
+                key={category._id}
+                className={`occasion-card ${!category.active ? "inactive" : ""}`}
+              >
+                <div className="occasion-image">
+                  <img
+                    src={getThumbnail(category.image)}
+                    alt={category.title}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                  />
+                  {!category.active && (
+                    <div className="inactive-overlay">Inactive</div>
+                  )}
+                </div>
+                <div className="occasion-content">
+                  <h3 className="occasion-title">{category.title}</h3>
+                  <div className="occasion-actions">
+                    <div className="occasion-toggle">
+                      <span className="toggle-label">Active</span>
+                      <Toggle
+                        checked={category.active}
+                        onChange={() => handleToggleCategory(category._id)}
+                      />
+                    </div>
+                    <div className="occasion-buttons">
+                      <button
+                        className="btn btn-sm btn-outline"
+                        onClick={() => handleOpenModal(category)}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDelete(category._id)}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+            <button
+              onClick={handlePrev}
+              disabled={!pageInfo.hasPrevPage || loadingCategories}
+              className="btn btn-outline"
+            >
+              ⬅️ Previous
+            </button>
+            <span className="text-gray-500">
+              {loadingCategories ? 'Loading...' : ''}
+            </span>
+            <button
+              onClick={handleNext}
+              disabled={!pageInfo.hasNextPage || loadingCategories}
+              className="btn btn-outline"
+            >
+              Next ➡️
+            </button>
+          </div>
+        </>
       ) : (
         <div className="empty-state">
           <span className="empty-icon">📁</span>
           <h3>No categories found</h3>
           <p>Try adjusting your search criteria</p>
         </div>
-      )}
+      )
+      }
 
       <Modal
         isOpen={isModalOpen}
@@ -470,7 +549,7 @@ const Categories = () => {
           </div>
         </form>
       </Modal>
-    </div>
+    </div >
   );
 };
 

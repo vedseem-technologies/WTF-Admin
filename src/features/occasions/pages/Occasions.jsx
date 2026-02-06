@@ -7,17 +7,48 @@ import { getThumbnail } from "../../../utils/imageOptimizer";
 import NewMenuDropdown from "../../../components/ui/NewMenuDropdown";
 import "./Occasions.css";
 
+import useCursorPagination from "../../../hooks/useCursorPagination";
+
 const Occasions = () => {
   const {
-    occasions,
     addOccasion,
     updateOccasion,
     deleteOccasion,
     toggleOccasionActive,
-    menuItems,
     getOccasionMenuSelection,
     saveOccasionMenuSelection,
   } = useData();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  // Debounce search term to avoid too many API calls
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const [filter, setFilter] = useState("all");
+
+  const {
+    data: occasions,
+    loading: loadingOccasions,
+    pageInfo,
+    handleNext,
+    handlePrev,
+    refresh: refreshOccasions
+  } = useCursorPagination('/api/occasions', {
+    limit: 12,
+    filters: {
+      active: filter === 'active' ? true : (filter === 'inactive' ? false : undefined),
+      search: debouncedSearchTerm || undefined
+    }
+  });
+
+  // Fetch menu items for dropdowns (fetch all/large limit)
+  const { data: menuItems } = useCursorPagination('/api/menu-items', { limit: 1000, filters: { active: true } });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOccasion, setEditingOccasion] = useState(null);
@@ -26,8 +57,6 @@ const Occasions = () => {
     image: "",
     active: true,
   });
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filter, setFilter] = useState("all");
 
   // Menu Selection State
   const [selectedStarters, setSelectedStarters] = useState([]);
@@ -72,11 +101,9 @@ const Occasions = () => {
             if (!data || !Array.isArray(data)) return [];
 
             let itemsToMap = [];
-            // Check if data is already populated objects
             if (data.length > 0 && typeof data[0] === 'object' && data[0]._id) {
               itemsToMap = data;
             } else {
-              // Map IDs to objects from source of truth
               itemsToMap = menuItems.filter((item) => data.includes(item._id));
             }
             return itemsToMap;
@@ -97,8 +124,7 @@ const Occasions = () => {
           const mappedUnselectedDesserts = mapItems(savedSelection.unselectedDesserts);
           const mappedUnselectedBreadRice = mapItems(savedSelection.unselectedBreadRice);
 
-          // Apply Strict Category Filtering to both Selected and Unselected
-          // This ensures if an item changed category, it doesn't appear in the wrong section
+          // Apply Strict Category Filtering
           setSelectedStarters(filterByCategory(mappedSelectedStarters, 'Starter', 1));
           setSelectedMainCourse(filterByCategory(mappedSelectedMain, 'Main Course', 2));
           setSelectedDesserts(filterByCategory(mappedSelectedDesserts, 'Dessert', 4));
@@ -116,8 +142,7 @@ const Occasions = () => {
           });
 
         } else {
-          // New menu selection implementation for existing entity that has no selection yet?
-          // Fallback to "New" logic basically
+          // New implementation fallback
           setUnselectedStarters(menuItems.filter(i => i.category === 'Starter' || i.category == 1));
           setUnselectedMainCourse(menuItems.filter(i => i.category === 'Main Course' || i.category == 2));
           setUnselectedDesserts(menuItems.filter(i => i.category === 'Dessert' || i.category == 4));
@@ -140,7 +165,7 @@ const Occasions = () => {
       setEditingOccasion(null);
       setFormData({ title: "", image: "", active: true });
 
-      // Strict Initialization for New Occasion
+      // Strict Initialization
       setUnselectedStarters(menuItems.filter(i => i.category === 'Starter' || i.category == 1));
       setUnselectedMainCourse(menuItems.filter(i => i.category === 'Main Course' || i.category == 2));
       setUnselectedDesserts(menuItems.filter(i => i.category === 'Dessert' || i.category == 4));
@@ -180,47 +205,52 @@ const Occasions = () => {
     });
   };
 
-
-
   // State Wrappers to sync Selected/Unselected
-  const updateSelection = (category, newSelected, currentUnselected, setUnselected) => {
-    // We assume 'newSelected' is the authoritative list of what is now selected.
-    // 'currentUnselected' needs to be updated.
-    // If an item is in newSelected, it must NOT be in unselected.
-    // If an item was in 'selected' (implied) and is removed, it goes to unselected.
-    // Actually, simpler: 
-    // The dropdown options = Selected U Unselected.
-    // We just need to ensure: Unselected = Options - NewSelected.
-    // But 'Options' is dynamic.
-    // Let's use the exact logic:
-    // If item ADDED to selected -> remove from unselected.
-    // If item REMOVED from selected -> add to unselected (if it was in Options).
-
-    // Better approach: Re-calculate Unselected from the KNOWN pool (Selected + Unselected)
-    const allKnown = [...newSelected, ...currentUnselected];
-    // De-dupe by ID just in case
-    const uniqueMap = new Map();
-    allKnown.forEach(i => uniqueMap.set(i._id, i));
-
+  // Helper for Updating Selection State
+  const updateSelection = (category, newSelected, allCategoryItems, setUnselected) => {
+    // Unselected = All Items - Selected Items
+    // Identify by ID to be safe
     const selectedIds = new Set(newSelected.map(i => i._id));
-    const newUnselected = [];
-
-    uniqueMap.forEach((item, id) => {
-      if (!selectedIds.has(id)) {
-        newUnselected.push(item);
-      }
-    });
-
+    const newUnselected = allCategoryItems.filter(i => !selectedIds.has(i._id));
     setUnselected(newUnselected);
   };
 
+  // Combined handlers to refresh list after mutation
+  const handleAddOccasion = async (data) => {
+    await addOccasion(data);
+    refreshOccasions();
+  };
+
+  const handleUpdateOccasion = async (id, data) => {
+    await updateOccasion(id, data);
+    refreshOccasions();
+  };
+
+  const handleDeleteOccasion = async (id) => {
+    if (window.confirm("Are you sure you want to delete this occasion?")) {
+      await deleteOccasion(id);
+      refreshOccasions();
+    }
+  };
+
+  const handleToggleOccasion = async (id) => {
+    await toggleOccasionActive(id);
+    refreshOccasions();
+  };
+
+  // ... (keeping existing modal logic, replacing update/add calls in handleSubmit)
+
+  // handleSubmit Logic replacement
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     let occasionId;
     let responseOccasion;
 
     if (editingOccasion) {
+      // Use local wrapper
+      // Note: updateOccasion returns the updated object in context, 
+      // but we need to await it. 
+      // DataContext updateOccasion calls setOccasions (which is empty/harmless) and returns response.data
       responseOccasion = await updateOccasion(editingOccasion._id, formData);
       occasionId = editingOccasion._id;
     } else {
@@ -230,13 +260,12 @@ const Occasions = () => {
       }
     }
 
-    if (occasionId) {
-      // Debug: Log state before constructing payload
-      console.log("Preparing to Save - State Check:", {
-        selectedStarters, unselectedStarters,
-        selectedMainCourse, unselectedMainCourse,
-      });
+    // Refresh list
+    refreshOccasions();
 
+    if (occasionId) {
+      // ... (Menu selection logic same as before)
+      // Copied from original:
       const menuSelection = {
         starters: selectedStarters.map((item) => item._id),
         mainCourses: selectedMainCourse.map((item) => item._id),
@@ -247,40 +276,10 @@ const Occasions = () => {
         unselectedDesserts: unselectedDesserts.map(i => i._id),
         unselectedBreadRice: unselectedBreadRice.map(i => i._id),
       };
-
-      console.log("FINAL PAYLOAD being sent to API:", JSON.stringify(menuSelection, null, 2));
       await saveOccasionMenuSelection(occasionId, menuSelection);
     }
-
     handleCloseModal();
   };
-
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this occasion?")) {
-      deleteOccasion(id);
-    }
-  };
-
-  const filteredOccasions = occasions
-    .filter((occasion) => {
-      const matchesSearch = occasion.title
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      const matchesFilter =
-        filter === "all" ||
-        (filter === "active" && occasion.active) ||
-        (filter === "inactive" && !occasion.active);
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(
-        a.createdAt || a._id ? parseInt(a._id.substring(0, 8), 16) * 1000 : 0,
-      ).getTime();
-      const dateB = new Date(
-        b.createdAt || b._id ? parseInt(b._id.substring(0, 8), 16) * 1000 : 0,
-      ).getTime();
-      return dateB - dateA;
-    });
 
   return (
     <div className="page-container">
@@ -298,19 +297,19 @@ const Occasions = () => {
             className={`filter-btn ${filter === "all" ? "active" : ""}`}
             onClick={() => setFilter("all")}
           >
-            All ({occasions.length})
+            All
           </button>
           <button
             className={`filter-btn ${filter === "active" ? "active" : ""}`}
             onClick={() => setFilter("active")}
           >
-            Active ({occasions.filter((o) => o.active).length})
+            Active
           </button>
           <button
             className={`filter-btn ${filter === "inactive" ? "active" : ""}`}
             onClick={() => setFilter("inactive")}
           >
-            Inactive ({occasions.filter((o) => !o.active).length})
+            Inactive
           </button>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
             + Add Occasion
@@ -318,61 +317,87 @@ const Occasions = () => {
         </div>
       </div>
 
-      {filteredOccasions.length > 0 ? (
-        <div className="occasions-grid">
-          {filteredOccasions.map((occasion) => (
-            <div
-              key={occasion._id}
-              className={`occasion-card ${!occasion.active ? "inactive" : ""}`}
-            >
-              <div className="occasion-image">
-                <img
-                  src={getThumbnail(occasion.image)}
-                  alt={occasion.title}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                  crossOrigin="anonymous"
-                />
-                {!occasion.active && (
-                  <div className="inactive-overlay">Inactive</div>
-                )}
-              </div>
-              <div className="occasion-content">
-                <h3 className="occasion-title">{occasion.title}</h3>
-                <div className="occasion-actions">
-                  <div className="occasion-toggle">
-                    <span className="toggle-label">Active</span>
-                    <Toggle
-                      checked={occasion.active}
-                      onChange={() => toggleOccasionActive(occasion._id)}
-                    />
-                  </div>
-                  <div className="occasion-buttons">
-                    <button
-                      className="btn btn-sm btn-outline"
-                      onClick={() => handleOpenModal(occasion)}
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(occasion._id)}
-                    >
-                      🗑️ Delete
-                    </button>
+      {loadingOccasions && occasions.length === 0 ? (
+        <div className="text-center py-10">Loading...</div>
+      ) : occasions.length > 0 ? (
+        <>
+          <div className="occasions-grid">
+            {occasions.map((occasion) => (
+              <div
+                key={occasion._id}
+                className={`occasion-card ${!occasion.active ? "inactive" : ""}`}
+              >
+                <div className="occasion-image">
+                  <img
+                    src={getThumbnail(occasion.image)}
+                    alt={occasion.title}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                  />
+                  {!occasion.active && (
+                    <div className="inactive-overlay">Inactive</div>
+                  )}
+                </div>
+                <div className="occasion-content">
+                  <h3 className="occasion-title">{occasion.title}</h3>
+                  <div className="occasion-actions">
+                    <div className="occasion-toggle">
+                      <span className="toggle-label">Active</span>
+                      <Toggle
+                        checked={occasion.active}
+                        onChange={() => handleToggleOccasion(occasion._id)}
+                      />
+                    </div>
+                    <div className="occasion-buttons">
+                      <button
+                        className="btn btn-sm btn-outline"
+                        onClick={() => handleOpenModal(occasion)}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDeleteOccasion(occasion._id)}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+            <button
+              onClick={handlePrev}
+              disabled={!pageInfo.hasPrevPage || loadingOccasions}
+              className="btn btn-outline"
+            >
+              ⬅️ Previous
+            </button>
+            <span className="text-gray-500">
+              {loadingOccasions ? 'Loading...' : ''}
+            </span>
+            <button
+              onClick={handleNext}
+              disabled={!pageInfo.hasNextPage || loadingOccasions}
+              className="btn btn-outline"
+            >
+              Next ➡️
+            </button>
+          </div>
+
+        </>
       ) : (
         <div className="empty-state">
           <span className="empty-icon">🎉</span>
           <h3>No occasions found</h3>
           <p>Try adjusting your search or filter criteria</p>
         </div>
-      )}
+      )
+      }
 
       <Modal
         isOpen={isModalOpen}
@@ -506,7 +531,7 @@ const Occasions = () => {
           </div>
         </form>
       </Modal>
-    </div>
+    </div >
   );
 };
 

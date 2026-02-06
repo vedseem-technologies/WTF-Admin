@@ -41,45 +41,24 @@ export const DataProvider = ({ children }) => {
   const [carouselImages, setCarouselImages] = useState([]);
   const [bannerImages, setBannerImages] = useState([]);
 
-  const [loadingCarousel, setLoadingCarousel] = useState(true);
-  const [loadingBanner, setLoadingBanner] = useState(true);
+  const [loadingCarousel, setLoadingCarousel] = useState(false);
+  const [loadingBanner, setLoadingBanner] = useState(false);
 
-  const [loadingBlogs, setLoadingBlogs] = useState(true);
+  const [loadingBlogs, setLoadingBlogs] = useState(false);
   const [loadingPopularItems, setLoadingPopularItems] = useState(true);
-  const [loadingOccasions, setLoadingOccasions] = useState(true);
-  const [loadingServices, setLoadingServices] = useState(true);
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [loadingYoutubeLinks, setLoadingYoutubeLinks] = useState(true);
-  const [loadingRangeMenus, setLoadingRangeMenus] = useState(true);
-  const [loadingMenuItems, setLoadingMenuItems] = useState(true);
+  const [loadingOccasions, setLoadingOccasions] = useState(false);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingYoutubeLinks, setLoadingYoutubeLinks] = useState(false);
+  const [loadingRangeMenus, setLoadingRangeMenus] = useState(false);
+  const [loadingMenuItems, setLoadingMenuItems] = useState(false);
   const [loadingPackages, setLoadingPackages] = useState(true);
-  const [loadingTestimonials, setLoadingTestimonials] = useState(true);
-  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [loadingTestimonials, setLoadingTestimonials] = useState(false);
+  const [loadingEvents, setLoadingEvents] = useState(false);
   const [progress, setProgress] = useState(0);
 
   // Fetch Blogs
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      try {
-        setLoadingBlogs(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/blogs/getblogs`,
-        );
-        if (Array.isArray(response.data)) {
-          setBlogs(response.data);
-        } else {
-          console.error("Fetch blogs response is not an array:", response.data);
-          setBlogs([]);
-        }
-      } catch (error) {
-        console.error("Error fetching blogs:", error);
-      } finally {
-        setLoadingBlogs(false);
-      }
-    };
-
-    fetchBlogs();
-  }, []);
+  // Blogs fetch removed for pagination
 
   useEffect(() => {
     const fetchPopularItems = async () => {
@@ -106,204 +85,13 @@ export const DataProvider = ({ children }) => {
     fetchPopularItems();
   }, []);
 
-  useEffect(() => {
-    const fetchOccasions = async () => {
-      try {
-        setLoadingOccasions(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/occasions`,
-        );
-        if (Array.isArray(response.data)) {
-          setOccasions(response.data);
-        } else {
-          console.error(
-            "Fetch occasions response is not an array:",
-            response.data,
-          );
-          setOccasions([]);
-        }
-      } catch (error) {
-        console.error("Error fetching occasions:", error);
-      } finally {
-        setLoadingOccasions(false);
-      }
-    };
-    fetchOccasions();
-  }, []);
-
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        setLoadingServices(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/services`,
-        );
-        if (Array.isArray(response.data)) {
-          setServices(response.data);
-        } else {
-          console.error(
-            "Fetch services response is not an array:",
-            response.data,
-          );
-          setServices([]);
-        }
-      } catch (error) {
-        console.error("Error fetching services:", error);
-      } finally {
-        setLoadingServices(false);
-      }
-    };
-    fetchServices();
-  }, []);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoadingCategories(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/categories`,
-        );
-        if (Array.isArray(response.data)) {
-          setCategories(response.data);
-        } else {
-          console.error(
-            "Fetch categories response is not an array:",
-            response.data,
-          );
-          setCategories([]);
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  // Duplicate fetchCategories removed
-
-  useEffect(() => {
-    const fetchYoutubeLinks = async () => {
-      try {
-        setLoadingYoutubeLinks(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/youtube`,
-        );
-        if (Array.isArray(response.data)) {
-          setYoutubeLinks(response.data);
-        } else {
-          console.error(
-            "Fetch youtube links response is not an array:",
-            response.data,
-          );
-          setYoutubeLinks([]);
-        }
-      } catch (error) {
-        console.error("Error fetching YouTube links:", error);
-      } finally {
-        setLoadingYoutubeLinks(false);
-      }
-    };
-    fetchYoutubeLinks();
-  }, []);
-
-  useEffect(() => {
-    const fetchRangeMenus = async () => {
-      try {
-        setLoadingRangeMenus(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/range-menus`,
-        );
-        if (Array.isArray(response.data)) {
-          setRangeMenus(response.data);
-        } else {
-          console.error(
-            "Fetch range menus response is not an array:",
-            response.data,
-          );
-          setRangeMenus([]);
-        }
-      } catch (error) {
-        console.error("Error fetching range menus:", error);
-      } finally {
-        setLoadingRangeMenus(false);
-      }
-    };
-    fetchRangeMenus();
-    fetchRangeMenus();
-  }, []);
-
-  useEffect(() => {
-    const fetchCarouselImages = async () => {
-      try {
-        setLoadingCarousel(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/carousel`
-        );
-        setCarouselImages(response.data);
-      } catch (error) {
-        console.error("Error fetching carousel images:", error);
-      } finally {
-        setLoadingCarousel(false);
-      }
-    };
-    fetchCarouselImages();
-  }, []);
-
-  useEffect(() => {
-    const fetchBannerImages = async () => {
-      try {
-        setLoadingBanner(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/banner`
-        );
-        setBannerImages(response.data);
-      } catch (error) {
-        console.error("Error fetching banner images:", error);
-      } finally {
-        setLoadingBanner(false);
-      }
-    };
-    fetchBannerImages();
-  }, []);
+  // Global fetches removed for pagination: Occasions, Services, Categories, Youtube, RangeMenus, Carousel, Banner
 
   const fetchMenuItems = async () => {
-    try {
-      setProgress(30);
-      setLoadingMenuItems(true);
-      const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/menu-items`,
-      );
-      console.log("Menu Items API Response:", response);
-      console.log("Menu Items Data:", response.data);
-      if (response.data && Array.isArray(response.data.data)) {
-        setMenuItems(response.data.data);
-      } else if (Array.isArray(response.data)) {
-        setMenuItems(response.data);
-      } else {
-        console.error(
-          "Fetch menu items response is not an array:",
-          response.data,
-        );
-        setMenuItems([]);
-      }
-      setProgress(100);
-    } catch (error) {
-      console.error("Error fetching menu items:", error);
-      if (error.response) {
-        console.error("Error response data:", error.response.data);
-        console.error("Error response status:", error.response.status);
-      }
-      setProgress(100);
-    } finally {
-      setLoadingMenuItems(false);
-    }
+    // Logic removed for cursor pagination
+    console.log("Global fetchMenuItems called but logic disabled");
   };
-
-  useEffect(() => {
-    fetchMenuItems();
-  }, []);
+  // useEffect fetchMenuItems removed
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -330,55 +118,7 @@ export const DataProvider = ({ children }) => {
     fetchPackages();
   }, []);
 
-  useEffect(() => {
-    const fetchTestimonials = async () => {
-      try {
-        setLoadingTestimonials(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/testimonials`,
-        );
-        if (Array.isArray(response.data)) {
-          setTestimonials(response.data);
-        } else {
-          console.error(
-            "Fetch testimonials response is not an array:",
-            response.data,
-          );
-          setTestimonials([]);
-        }
-      } catch (error) {
-        console.error("Error fetching testimonials:", error);
-      } finally {
-        setLoadingTestimonials(false);
-      }
-    };
-    fetchTestimonials();
-  }, []);
-
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setLoadingEvents(true);
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/events`,
-        );
-        if (Array.isArray(response.data)) {
-          setEvents(response.data);
-        } else {
-          console.error(
-            "Fetch events response is not an array:",
-            response.data,
-          );
-          setEvents([]);
-        }
-      } catch (error) {
-        console.error("Error fetching events:", error);
-      } finally {
-        setLoadingEvents(false);
-      }
-    };
-    fetchEvents();
-  }, []);
+  // Testimonials and Events fetch removed
   // State declarations moved to top of component (before useEffect hooks)
 
   const addMenuItem = async (menuItem) => {

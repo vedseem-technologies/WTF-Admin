@@ -1,35 +1,68 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useData } from '../../../context/DataContext';
 import './Youtube.css';
+import useCursorPagination from '../../../hooks/useCursorPagination';
 
 const Youtube = () => {
-    const { youtubeLinks, loadingYoutubeLinks, addYoutubeLink, deleteYoutubeLink } = useData();
+    const { addYoutubeLink, deleteYoutubeLink } = useData();
     const [linkInput, setLinkInput] = useState('');
+    const [searchTerm, setSearchTerm] = useState("");
+    // Debounce search
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
-    const handleAddLink = (e) => {
+    const {
+        data: youtubeLinks,
+        loading: loadingYoutubeLinks,
+        pageInfo,
+        handleNext,
+        handlePrev,
+        refresh: refreshYoutubeLinks
+    } = useCursorPagination('/api/youtube', {
+        limit: 12,
+        filters: {
+            search: debouncedSearchTerm || undefined
+        }
+    });
+
+    const handleError = (error) => {
+        console.error("Action error:", error);
+    };
+
+    const handleAddLink = async (e) => {
         e.preventDefault();
         if (linkInput.trim()) {
-            addYoutubeLink({ url: linkInput.trim() });
-            setLinkInput('');
+            try {
+                await addYoutubeLink({ url: linkInput.trim() });
+                refreshYoutubeLinks();
+                setLinkInput('');
+            } catch (e) { handleError(e); }
         }
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this YouTube link?')) {
-            deleteYoutubeLink(id);
+            try {
+                await deleteYoutubeLink(id);
+                refreshYoutubeLinks();
+            } catch (e) { handleError(e); }
         }
     };
-
-
 
     return (
         <div className="page-container">
-            {/* <div className="page-header">
-                <div className="page-header-content">
-                    <h2 className="page-title-big">🎥 YouTube Links</h2>
-                    <p className="page-description">Manage YouTube video links</p>
-                </div>
-            </div> */}
+            <div className="page-filters" style={{ marginBottom: '20px' }}>
+                <input
+                    type="text"
+                    className="form-control search-input"
+                    placeholder="🔍 Search links..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
 
             <div className="add-link-section">
                 <form onSubmit={handleAddLink} className="add-link-form">
@@ -47,52 +80,72 @@ const Youtube = () => {
                 </form>
             </div>
 
-
-
             <div className="table-container">
-                {loadingYoutubeLinks ? (
+                {loadingYoutubeLinks && youtubeLinks.length === 0 ? (
                     <div className="loading-state">
                         <h3>...loading</h3>
                     </div>
                 ) : youtubeLinks.length > 0 ? (
-                    <table className="table youtube-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>YouTube Link</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {youtubeLinks.map((link, index) => {
-                                return (
-                                    <tr key={link._id}>
-                                        <td>{index + 1}</td>
-                                        <td>
-                                            <a
-                                                href={link.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="youtube-link"
-                                            >
-                                                {link.url}
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <div className="action-buttons">
-                                                <button
-                                                    className="btn btn-sm btn-danger"
-                                                    onClick={() => handleDelete(link._id)}
+                    <>
+                        <table className="table youtube-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>YouTube Link</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {youtubeLinks.map((link, index) => {
+                                    return (
+                                        <tr key={link._id}>
+                                            <td>{index + 1}</td>
+                                            <td>
+                                                <a
+                                                    href={link.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="youtube-link"
                                                 >
-                                                    🗑️
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                                    {link.url}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <div className="action-buttons">
+                                                    <button
+                                                        className="btn btn-sm btn-danger"
+                                                        onClick={() => handleDelete(link._id)}
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                        {/* Pagination Controls */}
+                        <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+                            <button
+                                onClick={handlePrev}
+                                disabled={!pageInfo.hasPrevPage || loadingYoutubeLinks}
+                                className="btn btn-outline"
+                            >
+                                ⬅️ Previous
+                            </button>
+                            <span className="text-gray-500">
+                                {loadingYoutubeLinks ? 'Loading...' : ''}
+                            </span>
+                            <button
+                                onClick={handleNext}
+                                disabled={!pageInfo.hasNextPage || loadingYoutubeLinks}
+                                className="btn btn-outline"
+                            >
+                                Next ➡️
+                            </button>
+                        </div>
+                    </>
                 ) : (
                     <div className="empty-state">
                         <span className="empty-icon">🎥</span>

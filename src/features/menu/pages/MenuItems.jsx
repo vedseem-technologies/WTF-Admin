@@ -5,6 +5,7 @@ import Toggle from "../../../components/ui/Toggle";
 import ImageUpload from "../../../components/ui/ImageUpload";
 import { getThumbnail } from "../../../utils/imageOptimizer";
 import "./MenuItems.css";
+import useCursorPagination from "../../../hooks/useCursorPagination";
 
 const MENU_CATEGORIES = [
   { id: "Starter", name: "Starter", icon: "🥗" },
@@ -22,19 +23,48 @@ const LEGACY_CATEGORY_MAP = {
 
 const MenuItems = ({ categoryId = null, titleOverride = null }) => {
   const {
-    menuItems,
-    loadingMenuItems,
     addMenuItem,
     addBulkMenuItems,
     updateMenuItem,
     deleteMenuItem,
     toggleMenuItemActive,
-    refreshMenuItems,
   } = useData();
 
+  const [searchTerm, setSearchTerm] = useState("");
+  // Debounce search
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   useEffect(() => {
-    refreshMenuItems();
-  }, []);
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const [categoryFilter, setCategoryFilter] = useState(
+    categoryId ? categoryId.toString() : "all",
+  );
+  // Update category filter if prop changes
+  useEffect(() => {
+    if (categoryId) setCategoryFilter(categoryId.toString());
+  }, [categoryId]);
+
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  const {
+    data: menuItems,
+    loading: loadingMenuItems,
+    pageInfo,
+    handleNext,
+    handlePrev,
+    refresh: refreshMenuItems
+  } = useCursorPagination('/api/menu-items', {
+    limit: 20, // Higher limit for menu items usually
+    filters: {
+      active: activeFilter === 'active' ? true : (activeFilter === 'inactive' ? false : undefined),
+      search: debouncedSearchTerm || undefined,
+      category: categoryFilter !== 'all' ? categoryFilter : undefined,
+      type: typeFilter !== 'all' ? typeFilter : undefined
+    }
+  });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -52,12 +82,6 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
   });
 
   const [bulkData, setBulkData] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState(
-    categoryId ? categoryId.toString() : "all",
-  );
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [activeFilter, setActiveFilter] = useState("all");
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -95,25 +119,40 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
     setEditingItem(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleError = (error) => {
+    console.error("Action error:", error);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (editingItem) {
-      updateMenuItem(editingItem._id, formData);
-    } else {
-      addMenuItem(formData);
-    }
-
-    handleCloseModal();
+    try {
+      if (editingItem) {
+        await updateMenuItem(editingItem._id, formData);
+      } else {
+        await addMenuItem(formData);
+      }
+      refreshMenuItems();
+      handleCloseModal();
+    } catch (e) { handleError(e); }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this menu item?")) {
-      deleteMenuItem(id);
+      try {
+        await deleteMenuItem(id);
+        refreshMenuItems();
+      } catch (e) { handleError(e); }
     }
   };
 
-  const handleBulkAdd = (e) => {
+  const handleToggle = async (id) => {
+    try {
+      await toggleMenuItemActive(id);
+      refreshMenuItems();
+    } catch (e) { handleError(e); }
+  }
+
+  const handleBulkAdd = async (e) => {
     e.preventDefault();
 
     const lines = bulkData.trim().split("\n");
@@ -139,26 +178,13 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
       };
     });
 
-    addBulkMenuItems(items);
-    setBulkData("");
-    setIsBulkModalOpen(false);
+    try {
+      await addBulkMenuItems(items);
+      refreshMenuItems();
+      setBulkData("");
+      setIsBulkModalOpen(false);
+    } catch (e) { handleError(e); }
   };
-
-  const filteredItems = menuItems.filter((item) => {
-    const matchesSearch = item.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      categoryFilter === "all" ||
-      item.category === categoryFilter ||
-      LEGACY_CATEGORY_MAP[item.category] === categoryFilter;
-    const matchesType = typeFilter === "all" || item.type === typeFilter;
-    const matchesActive =
-      activeFilter === "all" ||
-      (activeFilter === "active" && item.active) ||
-      (activeFilter === "inactive" && !item.active);
-    return matchesSearch && matchesCategory && matchesType && matchesActive;
-  });
 
   const getCategoryName = (catId) => {
     const category = MENU_CATEGORIES.find((c) => c.id === catId);
@@ -191,83 +217,105 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
       </div>
 
       <div className="table-container">
-        {loadingMenuItems ? (
+        {loadingMenuItems && menuItems.length === 0 ? (
           <div className="loading-state">
             <h3>...loading</h3>
           </div>
-        ) : filteredItems.length > 0 ? (
-          <table className="table menu-items-table">
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Item Name</th>
-                <th>Category</th>
-                <th>Type</th>
-                <th>Quantity</th>
-                <th>Measurement</th>
-                <th>Unit Price</th>
-                <th>People</th>
-                <th>Active</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map((item) => (
-                <tr key={item._id}>
-                  <td>
-                    <div className="item-image">
-                      <img
-                        src={getThumbnail(item.image)}
-                        alt={item.name}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
-                      />
-                    </div>
-                  </td>
-                  <td className="font-semibold">{item.name}</td>
-                  <td>
-                    <span className="badge badge-info">
-                      {LEGACY_CATEGORY_MAP[item.category] || item.category || "-"}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      className={`badge badge-${item.type === "Veg" ? "success" : "danger"}`}
-                    >
-                      {item.type}
-                    </span>
-                  </td>
-                  <td>{item.quantity}</td>
-                  <td>{item.measurement}</td>
-                  <td>{formatCurrency(item.unitPrice)}</td>
-                  <td>{item.people}</td>
-                  <td>
-                    <Toggle
-                      checked={item.active}
-                      onChange={() => toggleMenuItemActive(item._id)}
-                    />
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button
-                        className="btn btn-sm btn-outline"
-                        onClick={() => handleOpenModal(item)}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleDelete(item._id)}
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
+        ) : menuItems.length > 0 ? (
+          <>
+            <table className="table menu-items-table">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Item Name</th>
+                  <th>Category</th>
+                  <th>Type</th>
+                  <th>Quantity</th>
+                  <th>Measurement</th>
+                  <th>Unit Price</th>
+                  <th>People</th>
+                  <th>Active</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {menuItems.map((item) => (
+                  <tr key={item._id}>
+                    <td>
+                      <div className="item-image">
+                        <img
+                          src={getThumbnail(item.image)}
+                          alt={item.name}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+                    </td>
+                    <td className="font-semibold">{item.name}</td>
+                    <td>
+                      <span className="badge badge-info">
+                        {LEGACY_CATEGORY_MAP[item.category] || item.category || "-"}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={`badge badge-${item.type === "Veg" ? "success" : "danger"}`}
+                      >
+                        {item.type}
+                      </span>
+                    </td>
+                    <td>{item.quantity}</td>
+                    <td>{item.measurement}</td>
+                    <td>{formatCurrency(item.unitPrice)}</td>
+                    <td>{item.people}</td>
+                    <td>
+                      <Toggle
+                        checked={item.active}
+                        onChange={() => handleToggle(item._id)}
+                      />
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => handleOpenModal(item)}
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(item._id)}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Pagination Controls */}
+            <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+              <button
+                onClick={handlePrev}
+                disabled={!pageInfo.hasPrevPage || loadingMenuItems}
+                className="btn btn-outline"
+              >
+                ⬅️ Previous
+              </button>
+              <span className="text-gray-500">
+                {loadingMenuItems ? 'Loading...' : ''}
+              </span>
+              <button
+                onClick={handleNext}
+                disabled={!pageInfo.hasNextPage || loadingMenuItems}
+                className="btn btn-outline"
+              >
+                Next ➡️
+              </button>
+            </div>
+          </>
         ) : (
           <div className="empty-state">
             <span className="empty-icon">🍕</span>

@@ -1,9 +1,10 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { useData } from "../../../context/DataContext";
 import Modal from "../../../components/ui/Modal";
 import ImageUpload from "../../../components/ui/ImageUpload";
 import { getThumbnail } from "../../../utils/imageOptimizer";
 import "./Blogs.css";
+import useCursorPagination from "../../../hooks/useCursorPagination";
 
 const BLOG_TYPES = [
   "Recipe",
@@ -15,7 +16,33 @@ const BLOG_TYPES = [
 ];
 
 const Blogs = () => {
-  const { blogs, loadingBlogs, addBlog, updateBlog, deleteBlog } = useData();
+  const { addBlog, updateBlog, deleteBlog } = useData();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const [blogTypeFilter, setBlogTypeFilter] = useState("all");
+
+  const {
+    data: blogs,
+    loading: loadingBlogs,
+    pageInfo,
+    handleNext,
+    handlePrev,
+    refresh: refreshBlogs
+  } = useCursorPagination('/api/blogs/getblogs', {
+    limit: 12,
+    filters: {
+      search: debouncedSearchTerm || undefined,
+      blogType: blogTypeFilter !== 'all' ? blogTypeFilter : undefined
+    }
+  });
+
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBlog, setEditingBlog] = useState(null);
   const [formData, setFormData] = useState({
@@ -25,7 +52,6 @@ const Blogs = () => {
     date: new Date().toISOString().split("T")[0],
     blogType: BLOG_TYPES[0],
   });
-  const [searchTerm, setSearchTerm] = useState("");
 
   const handleOpenModal = (blog = null) => {
     if (blog) {
@@ -55,33 +81,31 @@ const Blogs = () => {
     setEditingBlog(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleError = (error) => {
+    console.error("Action error:", error);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingBlog) {
-      updateBlog(editingBlog._id, formData);
-    } else {
-      addBlog(formData);
-    }
-    handleCloseModal();
+    try {
+      if (editingBlog) {
+        await updateBlog(editingBlog._id, formData);
+      } else {
+        await addBlog(formData);
+      }
+      refreshBlogs();
+      handleCloseModal();
+    } catch (e) { handleError(e); }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this blog?")) {
-      deleteBlog(id);
+      try {
+        await deleteBlog(id);
+        refreshBlogs();
+      } catch (e) { handleError(e); }
     }
   };
-
-  const filteredBlogs = blogs
-    .filter(
-      (blog) =>
-        blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        blog.description.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
-    .sort((a, b) => {
-      const dateDiff = new Date(b.date) - new Date(a.date);
-      if (dateDiff !== 0) return dateDiff;
-      return b._id.localeCompare(a._id);
-    });
 
   return (
     <div className="page-container">
@@ -94,6 +118,17 @@ const Blogs = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <div className="filter-buttons" style={{ marginLeft: "auto" }}>
+          <select
+            className="form-select"
+            style={{ width: 'auto', marginRight: '10px' }}
+            value={blogTypeFilter}
+            onChange={(e) => setBlogTypeFilter(e.target.value)}
+          >
+            <option value="all">All Types</option>
+            {BLOG_TYPES.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
             + Add New
           </button>
@@ -101,63 +136,89 @@ const Blogs = () => {
       </div>
 
       <div className="table-container">
-        <table className="table blogs-table">
-          <thead>
-            <tr>
-              <th>Image</th>
-              <th>Title</th>
-              <th>Blog Type</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredBlogs.map((blog) => (
-              <tr key={blog._id}>
-                <td>
-                  <div className="blog-image-cell">
-                    <img
-                      src={getThumbnail(blog.image)}
-                      alt={blog.title}
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                      crossOrigin="anonymous"
-                    />
-                  </div>
-                </td>
-                <td>
-                  <div className="blog-title-cell">
-                    <h4>{blog.title}</h4>
-                    <p>{blog.description.substring(0, 80)}...</p>
-                  </div>
-                </td>
-                <td>
-                  <span className="blog-type-badge">{blog.blogType}</span>
-                </td>
-                <td>{new Date(blog.date).toLocaleDateString()}</td>
-                <td>
-                  <div className="action-buttons">
-                    <button
-                      className="btn btn-sm btn-outline"
-                      onClick={() => handleOpenModal(blog)}
-                      style={{ marginRight: "8px" }}
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(blog._id)}
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {!loadingBlogs && filteredBlogs.length === 0 && (
+        {loadingBlogs && blogs.length === 0 ? (
+          <div className="loading-state">
+            <h3>...loading</h3>
+          </div>
+        ) : blogs.length > 0 ? (
+          <>
+            <table className="table blogs-table">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Title</th>
+                  <th>Blog Type</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {blogs.map((blog) => (
+                  <tr key={blog._id}>
+                    <td>
+                      <div className="blog-image-cell">
+                        <img
+                          src={getThumbnail(blog.image)}
+                          alt={blog.title}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+                    </td>
+                    <td>
+                      <div className="blog-title-cell">
+                        <h4>{blog.title}</h4>
+                        <p>{blog.description.substring(0, 80)}...</p>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="blog-type-badge">{blog.blogType}</span>
+                    </td>
+                    <td>{new Date(blog.date).toLocaleDateString()}</td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => handleOpenModal(blog)}
+                          style={{ marginRight: "8px" }}
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(blog._id)}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Pagination Controls */}
+            <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+              <button
+                onClick={handlePrev}
+                disabled={!pageInfo.hasPrevPage || loadingBlogs}
+                className="btn btn-outline"
+              >
+                ⬅️ Previous
+              </button>
+              <span className="text-gray-500">
+                {loadingBlogs ? 'Loading...' : ''}
+              </span>
+              <button
+                onClick={handleNext}
+                disabled={!pageInfo.hasNextPage || loadingBlogs}
+                className="btn btn-outline"
+              >
+                Next ➡️
+              </button>
+            </div>
+          </>
+        ) : (
           <div className="empty-state">
             <span className="empty-icon">📝</span>
             <h3>No blogs found</h3>

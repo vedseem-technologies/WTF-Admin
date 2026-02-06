@@ -1,20 +1,42 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { useData } from "../../../context/DataContext";
 import Modal from "../../../components/ui/Modal";
 import ImageUpload from "../../../components/ui/ImageUpload";
 import { getThumbnail } from "../../../utils/imageOptimizer";
 import "./RangeMenus.css";
+import useCursorPagination from "../../../hooks/useCursorPagination";
 
 const MENU_RANGES = ["Paneer Range", "Fast Food Range", "Chinese Range"];
 
 const RangeMenus = () => {
   const {
-    rangeMenus,
-    loadingRangeMenus,
     addRangeMenu,
     updateRangeMenu,
     deleteRangeMenu,
   } = useData();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  // Debounce search
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const {
+    data: rangeMenus,
+    loading: loadingRangeMenus,
+    pageInfo,
+    handleNext,
+    handlePrev,
+    refresh: refreshRangeMenus
+  } = useCursorPagination('/api/range-menus', {
+    limit: 12,
+    filters: {
+      search: debouncedSearchTerm || undefined
+    }
+  });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMenu, setEditingMenu] = useState(null);
   const [formData, setFormData] = useState({
@@ -23,7 +45,6 @@ const RangeMenus = () => {
     rating: "",
     range: MENU_RANGES[0],
   });
-  const [searchTerm, setSearchTerm] = useState("");
 
   const handleOpenModal = (menu = null) => {
     if (menu) {
@@ -51,29 +72,34 @@ const RangeMenus = () => {
     setEditingMenu(null);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingMenu) {
-      updateRangeMenu(editingMenu._id, formData);
-    } else {
-      addRangeMenu(formData);
-    }
-    handleCloseModal();
+  const handleError = (error) => {
+    console.error("Action error:", error);
   };
 
-  const handleDelete = (id) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingMenu) {
+        await updateRangeMenu(editingMenu._id, formData);
+      } else {
+        await addRangeMenu(formData);
+      }
+      refreshRangeMenus();
+      handleCloseModal();
+    } catch (e) { handleError(e); }
+  };
+
+  const handleDelete = async (id) => {
     if (
       window.confirm("Are you sure you want to delete this range menu item?")
     ) {
-      deleteRangeMenu(id);
+      try {
+        await deleteRangeMenu(id);
+        refreshRangeMenus();
+      } catch (e) { handleError(e); }
     }
   };
 
-  const filteredMenus = rangeMenus.filter(
-    (menu) =>
-      menu.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      menu.range.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
 
   return (
     <div className="page-container">
@@ -93,63 +119,85 @@ const RangeMenus = () => {
       </div>
 
       <div className="table-container">
-        {loadingRangeMenus ? (
+        {loadingRangeMenus && rangeMenus.length === 0 ? (
           <div className="loading-state">
             <h3>...loading</h3>
           </div>
-        ) : filteredMenus.length > 0 ? (
-          <table className="table range-menus-table">
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Name</th>
-                <th>Range</th>
-                <th>Rating</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMenus.map((menu) => (
-                <tr key={menu._id}>
-                  <td>
-                    <div className="menu-image-cell">
-                      <img
-                        src={getThumbnail(menu.image)}
-                        alt={menu.name}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
-                      />
-                    </div>
-                  </td>
-                  <td className="menu-name">{menu.name}</td>
-                  <td>
-                    <span className="range-badge">{menu.range}</span>
-                  </td>
-                  <td>
-                    <span className="rating-display">{menu.rating} ⭐</span>
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button
-                        className="btn btn-sm btn-outline"
-                        onClick={() => handleOpenModal(menu)}
-                        style={{ marginRight: "8px" }}
-                      >
-                        ✏️ 
-                      </button>
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleDelete(menu._id)}
-                      >
-                        🗑️ 
-                      </button>
-                    </div>
-                  </td>
+        ) : rangeMenus.length > 0 ? (
+          <>
+            <table className="table range-menus-table">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Name</th>
+                  <th>Range</th>
+                  <th>Rating</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rangeMenus.map((menu) => (
+                  <tr key={menu._id}>
+                    <td>
+                      <div className="menu-image-cell">
+                        <img
+                          src={getThumbnail(menu.image)}
+                          alt={menu.name}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+                    </td>
+                    <td className="menu-name">{menu.name}</td>
+                    <td>
+                      <span className="range-badge">{menu.range}</span>
+                    </td>
+                    <td>
+                      <span className="rating-display">{menu.rating} ⭐</span>
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => handleOpenModal(menu)}
+                          style={{ marginRight: "8px" }}
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(menu._id)}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Pagination Controls */}
+            <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+              <button
+                onClick={handlePrev}
+                disabled={!pageInfo.hasPrevPage || loadingRangeMenus}
+                className="btn btn-outline"
+              >
+                ⬅️ Previous
+              </button>
+              <span className="text-gray-500">
+                {loadingRangeMenus ? 'Loading...' : ''}
+              </span>
+              <button
+                onClick={handleNext}
+                disabled={!pageInfo.hasNextPage || loadingRangeMenus}
+                className="btn btn-outline"
+              >
+                Next ➡️
+              </button>
+            </div>
+          </>
         ) : (
           <div className="empty-state">
             <span className="empty-icon">📋</span>
