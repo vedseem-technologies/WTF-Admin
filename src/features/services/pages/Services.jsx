@@ -82,9 +82,149 @@ const Services = () => {
   };
 
 
-  // ... state ... (Menu selection state remains)
+  // Menu Selection State
+  const [selectedStarters, setSelectedStarters] = useState([]);
+  const [selectedMainCourse, setSelectedMainCourse] = useState([]);
+  const [selectedDesserts, setSelectedDesserts] = useState([]);
+  const [selectedBreadRice, setSelectedBreadRice] = useState([]);
 
-  // ... (handleOpenModal logic etc remains, it uses service which is passed in)
+  // Unselected Menu Items State (For Strict Persistence)
+  const [unselectedStarters, setUnselectedStarters] = useState([]);
+  const [unselectedMainCourse, setUnselectedMainCourse] = useState([]);
+  const [unselectedDesserts, setUnselectedDesserts] = useState([]);
+  const [unselectedBreadRice, setUnselectedBreadRice] = useState([]);
+  const [isLoadingSelection, setIsLoadingSelection] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [dropdownSearchTerms, setDropdownSearchTerms] = useState({
+    starter: "",
+    mainCourse: "",
+    dessert: "",
+    breadRice: "",
+  });
+
+  const handleOpenModal = async (service = null) => {
+    if (service) {
+      setEditingService(service);
+      setFormData({
+        title: service.title,
+        image: service.image,
+        active: service.active,
+      });
+
+      // Load menu selection
+      setIsLoadingSelection(true);
+      try {
+        const savedSelection = await getServiceMenuSelection(service._id);
+
+        if (savedSelection) {
+          const mapItems = (data) => {
+            if (!data || !Array.isArray(data)) return [];
+            let itemsToMap = [];
+            if (data.length > 0 && typeof data[0] === 'object' && data[0]._id) {
+              itemsToMap = data;
+            } else {
+              itemsToMap = menuItems.filter((item) => data.includes(item._id));
+            }
+            return itemsToMap;
+          };
+
+          const filterByCategory = (items, categoryName, categoryId) => {
+            return items.filter(i => i.category === categoryName || i.category == categoryId);
+          };
+
+          const mappedSelectedStarters = mapItems(savedSelection.starters);
+          const mappedSelectedMain = mapItems(savedSelection.mainCourses);
+          const mappedSelectedDesserts = mapItems(savedSelection.desserts);
+          const mappedSelectedBreadRice = mapItems(savedSelection.breadRice);
+
+          const mappedUnselectedStarters = mapItems(savedSelection.unselectedStarters);
+          const mappedUnselectedMain = mapItems(savedSelection.unselectedMainCourses);
+          const mappedUnselectedDesserts = mapItems(savedSelection.unselectedDesserts);
+          const mappedUnselectedBreadRice = mapItems(savedSelection.unselectedBreadRice);
+
+          setSelectedStarters(filterByCategory(mappedSelectedStarters, 'Starter', 1));
+          setSelectedMainCourse(filterByCategory(mappedSelectedMain, 'Main Course', 2));
+          setSelectedDesserts(filterByCategory(mappedSelectedDesserts, 'Dessert', 4));
+          setSelectedBreadRice(filterByCategory(mappedSelectedBreadRice, 'Rice & Bread', 3));
+
+          setUnselectedStarters(filterByCategory(mappedUnselectedStarters, 'Starter', 1));
+          setUnselectedMainCourse(filterByCategory(mappedUnselectedMain, 'Main Course', 2));
+          setUnselectedDesserts(filterByCategory(mappedUnselectedDesserts, 'Dessert', 4));
+          setUnselectedBreadRice(filterByCategory(mappedUnselectedBreadRice, 'Rice & Bread', 3));
+        } else {
+          // Fallback
+          setUnselectedStarters(menuItems.filter(i => i.category === 'Starter' || i.category == 1));
+          setUnselectedMainCourse(menuItems.filter(i => i.category === 'Main Course' || i.category == 2));
+          setUnselectedDesserts(menuItems.filter(i => i.category === 'Dessert' || i.category == 4));
+          setUnselectedBreadRice(menuItems.filter(i => i.category === 'Rice & Bread' || i.category == 3));
+
+          setSelectedStarters([]);
+          setSelectedMainCourse([]);
+          setSelectedDesserts([]);
+          setSelectedBreadRice([]);
+        }
+      } catch (error) {
+        console.error('Error loading menu selection:', error);
+        setSelectedStarters([]);
+        setSelectedMainCourse([]);
+        setSelectedDesserts([]);
+        setSelectedBreadRice([]);
+      }
+      setIsLoadingSelection(false);
+    } else {
+      setEditingService(null);
+      setFormData({
+        title: "",
+        image: "",
+        active: true,
+      });
+      // Strict Initialization
+      setUnselectedStarters(menuItems.filter(i => i.category === 'Starter' || i.category == 1));
+      setUnselectedMainCourse(menuItems.filter(i => i.category === 'Main Course' || i.category == 2));
+      setUnselectedDesserts(menuItems.filter(i => i.category === 'Dessert' || i.category == 4));
+      setUnselectedBreadRice(menuItems.filter(i => i.category === 'Rice & Bread' || i.category == 3));
+
+      setSelectedStarters([]);
+      setSelectedMainCourse([]);
+      setSelectedDesserts([]);
+      setSelectedBreadRice([]);
+      setIsLoadingSelection(false);
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingService(null);
+    setFormData({
+      title: "",
+      image: "",
+      active: true,
+    });
+    setSelectedStarters([]);
+    setSelectedMainCourse([]);
+    setSelectedDesserts([]);
+    setSelectedBreadRice([]);
+
+    setUnselectedStarters([]);
+    setUnselectedMainCourse([]);
+    setUnselectedDesserts([]);
+    setUnselectedBreadRice([]);
+
+    setOpenDropdown(null);
+    setDropdownSearchTerms({
+      starter: "",
+      mainCourse: "",
+      dessert: "",
+      breadRice: "",
+    });
+  };
+
+  const updateSelection = (category, newSelected, allCategoryItems, setUnselected) => {
+    const selectedIds = new Set(newSelected.map(i => i._id));
+    const newUnselected = allCategoryItems.filter(i => !selectedIds.has(i._id));
+    setUnselected(newUnselected);
+  };
 
   // handleSubmit Logic replacement
   const handleSubmit = async (e) => {

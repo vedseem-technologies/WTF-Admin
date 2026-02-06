@@ -383,8 +383,8 @@ export const DataProvider = ({ children }) => {
       );
       return response.data.url;
     } catch (error) {
-      console.error("Error uploading image:", error);
-      return image;
+      console.error("Error uploading image:", error.response?.data || error.message);
+      throw new Error(`Image Upload Failed: ${error.response?.data?.message || "Unknown error"}`);
     }
   };
 
@@ -690,10 +690,12 @@ export const DataProvider = ({ children }) => {
         setBlogs((prev) =>
           prev.map((b) => (b._id === tempId ? response.data : b)),
         );
+        return response.data;
       } catch (error) {
         setBlogs((prev) => prev.filter((b) => b._id !== tempId));
         console.error("Error adding blog:", error);
-        alert("Failed to add blog. Please try again.");
+        alert(error.message || "Failed to add blog. Please try again.");
+        throw error;
       }
     },
     updateBlog: async (id, updatedData) => {
@@ -822,10 +824,12 @@ export const DataProvider = ({ children }) => {
         setRangeMenus((prev) =>
           prev.map((m) => (m._id === tempId ? response.data : m)),
         );
+        return response.data; // Return data for local UI updates
       } catch (error) {
         setRangeMenus((prev) => prev.filter((m) => m._id !== tempId));
         console.error("Error adding range menu:", error);
-        alert("Failed to add range menu. Please try again.");
+        alert(error.message || "Failed to add range menu.");
+        throw error; // Re-throw so caller knows it failed
       }
     },
     updateRangeMenu: async (id, updatedData) => {

@@ -33,7 +33,8 @@ const Blogs = () => {
     pageInfo,
     handleNext,
     handlePrev,
-    refresh: refreshBlogs
+    refresh: refreshBlogs,
+    setData
   } = useCursorPagination('/api/blogs/getblogs', {
     limit: 12,
     filters: {
@@ -87,15 +88,39 @@ const Blogs = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      if (editingBlog) {
+    handleCloseModal(); // 1. Close modal immediately
+
+    if (editingBlog) {
+      // Optimistic Update for Edit
+      const originalItems = [...blogs];
+      const updatedItem = { ...editingBlog, ...formData };
+      setData(prev => prev.map(item => item._id === editingBlog._id ? updatedItem : item));
+
+      try {
         await updateBlog(editingBlog._id, formData);
-      } else {
-        await addBlog(formData);
+        refreshBlogs();
+      } catch (e) {
+        setData(originalItems); // Rollback
+        handleError(e);
       }
-      refreshBlogs();
-      handleCloseModal();
-    } catch (e) { handleError(e); }
+    } else {
+      // Optimistic Update for Add
+      const tempId = `temp-${Date.now()}`;
+      const optimisticItem = { ...formData, _id: tempId };
+
+      // Prepend to list immediately
+      setData(prev => [optimisticItem, ...prev]);
+
+      try {
+        const serverItem = await addBlog(formData);
+        // Replace temp item with real item
+        setData(prev => prev.map(item => item._id === tempId ? serverItem : item));
+      } catch (e) {
+        // Remove temp item on failure
+        setData(prev => prev.filter(item => item._id !== tempId));
+        handleError(e);
+      }
+    }
   };
 
   const handleDelete = async (id) => {

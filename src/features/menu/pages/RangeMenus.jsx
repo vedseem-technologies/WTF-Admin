@@ -29,7 +29,8 @@ const RangeMenus = () => {
     pageInfo,
     handleNext,
     handlePrev,
-    refresh: refreshRangeMenus
+    refresh: refreshRangeMenus,
+    setData // Get setData
   } = useCursorPagination('/api/range-menus', {
     limit: 12,
     filters: {
@@ -78,15 +79,39 @@ const RangeMenus = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      if (editingMenu) {
+    handleCloseModal(); // 1. Close modal immediately
+
+    if (editingMenu) {
+      // Optimistic Update for Edit
+      const originalItems = [...rangeMenus];
+      const updatedItem = { ...editingMenu, ...formData };
+      setData(prev => prev.map(item => item._id === editingMenu._id ? updatedItem : item));
+
+      try {
         await updateRangeMenu(editingMenu._id, formData);
-      } else {
-        await addRangeMenu(formData);
+        refreshRangeMenus();
+      } catch (e) {
+        setData(originalItems); // Rollback
+        handleError(e);
       }
-      refreshRangeMenus();
-      handleCloseModal();
-    } catch (e) { handleError(e); }
+    } else {
+      // Optimistic Update for Add
+      const tempId = `temp-${Date.now()}`;
+      const optimisticItem = { ...formData, _id: tempId, rating: Number(formData.rating) };
+
+      // Prepend to list immediately
+      setData(prev => [optimisticItem, ...prev]);
+
+      try {
+        const serverItem = await addRangeMenu(formData);
+        // Replace temp item with real item
+        setData(prev => prev.map(item => item._id === tempId ? serverItem : item));
+      } catch (e) {
+        // Remove temp item on failure
+        setData(prev => prev.filter(item => item._id !== tempId));
+        handleError(e);
+      }
+    }
   };
 
   const handleDelete = async (id) => {
