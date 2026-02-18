@@ -1,4 +1,5 @@
-﻿import { useParams, useNavigate } from "react-router-dom";
+﻿import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "../../../context/DataContext";
 import "./OrderDetail.css";
 
@@ -6,13 +7,34 @@ const OrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const {
-    getOrderById,
     updateOrderStatus,
-    getMenuItemById,
+    getMenuItemById, // Keep for menu item details lookup if needed, assuming DataContext has menu items loaded
     getMenuCategoryById,
   } = useData();
 
-  const order = getOrderById(id);
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        const response = await fetch(`/api/orders/${id}`);
+        const data = await response.json();
+        if (data.success) {
+          setOrder(data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch order", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrder();
+  }, [id]);
+
+  if (loading) {
+    return <div className="page-container flex justify-center items-center">Loading...</div>;
+  }
 
   if (!order) {
     return (
@@ -40,6 +62,7 @@ const OrderDetail = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "long",
@@ -49,36 +72,47 @@ const OrderDetail = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      Pending: "warning",
-      Confirmed: "info",
-      "In Preparation": "primary",
-      Delivered: "success",
-      Cancelled: "danger",
+      pending: "warning",
+      confirmed: "info",
+      processing: "primary",
+      completed: "success",
+      cancelled: "danger",
     };
-    return colors[status] || "info";
+    return colors[status?.toLowerCase()] || "info";
   };
 
-  const handleStatusChange = (newStatus) => {
-    updateOrderStatus(order.id, newStatus);
+  const handleStatusChange = async (newStatus) => {
+    // updateOrderStatus(order.id, newStatus); // Using context method might be stale or not support string IDs
+    // Implement direct update
+    try {
+      const response = await fetch(`/api/orders/${order.orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (response.ok) {
+        setOrder(prev => ({ ...prev, status: newStatus }));
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Group items by category
   const groupedItems = {};
   order.items.forEach((orderItem) => {
-    const menuItem = getMenuItemById(orderItem.id);
-    if (menuItem) {
-      const category = getMenuCategoryById(menuItem.category);
-      const categoryName = category ? category.name : "Other";
+    // Fallback: Use orderItem.name if getMenuItemById fails (menu item might be deleted)
+    // Actually, getMenuItemById relies on DataContext. 
+    // If orderItem has 'name', use it directly!
+    // The backend stores snapshot of item details in `items` array properly now.
 
-      if (!groupedItems[categoryName]) {
-        groupedItems[categoryName] = [];
-      }
+    const categoryName = orderItem.category || "Other";
 
-      groupedItems[categoryName].push({
-        ...menuItem,
-        quantity: orderItem.quantity,
-      });
+    if (!groupedItems[categoryName]) {
+      groupedItems[categoryName] = [];
     }
+
+    groupedItems[categoryName].push(orderItem);
   });
 
   return (
@@ -88,7 +122,7 @@ const OrderDetail = () => {
           ← Back to Orders
         </button>
         <div className="order-header-info">
-          <h2 className="page-title-big">Order #{order.id}</h2>
+          <h2 className="page-title-big">Order #{order.orderId}</h2>
           <span
             className={`badge badge-lg badge-${getStatusColor(order.status)}`}
           >
@@ -106,20 +140,53 @@ const OrderDetail = () => {
           <div className="detail-card-body">
             <div className="info-row">
               <span className="info-label">Name</span>
-              <span className="info-value">{order.customer.name}</span>
+              <span className="info-value font-bold">
+                {order.userId?.firstName} {order.userId?.lastName}
+              </span>
             </div>
             <div className="info-row">
               <span className="info-label">Phone</span>
-              <span className="info-value">{order.customer.phone}</span>
+              <span className="info-value">{order.userId?.phone || 'N/A'}</span>
             </div>
             <div className="info-row">
               <span className="info-label">Email</span>
-              <span className="info-value">{order.customer.email}</span>
+              <span className="info-value break-words">{order.userId?.email || 'N/A'}</span>
             </div>
             <div className="info-row">
-              <span className="info-label">Address</span>
-              <span className="info-value">{order.customer.address}</span>
+              <span className="info-label">Delivery Address</span>
+              <span className="info-value">{order.address || 'N/A'}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Payment Information */}
+        <div className="detail-card">
+          <div className="detail-card-header">
+            <h3 className="detail-card-title">💳 Payment Information</h3>
+          </div>
+          <div className="detail-card-body">
+            <div className="info-row">
+              <span className="info-label">Method</span>
+              <span className="info-value uppercase font-bold">{order.paymentMethod || 'N/A'}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Status</span>
+              <span className={`badge badge-${order.paymentStatus === 'paid' ? 'success' : 'warning'}`}>
+                {order.paymentStatus || 'Pending'}
+              </span>
+            </div>
+            {order.zohoTransactionId && (
+              <div className="info-row">
+                <span className="info-label">Transaction ID</span>
+                <span className="info-value font-mono text-sm">{order.zohoTransactionId}</span>
+              </div>
+            )}
+            {order.paymentGatewayResponse && (
+              <div className="mt-4 p-2 bg-gray-50 rounded text-xs space-y-1">
+                <p className="font-semibold text-gray-500">Gateway Details:</p>
+                <p>ID: {order.zohoPaymentId || 'N/A'}</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -245,19 +312,14 @@ const OrderDetail = () => {
         </div>
         <div className="detail-card-body">
           <div className="price-breakdown">
-            {order.items.map((orderItem) => {
-              const menuItem = getMenuItemById(orderItem.id);
-              if (!menuItem) return null;
-
-              const portionSize = parseFloat(menuItem.portionSize) || 0;
-              const totalWeight = portionSize * orderItem.quantity;
-              const totalPrice = (menuItem.price || 0) * orderItem.quantity;
+            {order.items.map((orderItem, idx) => {
+              const totalPrice = (orderItem.price || 0) * orderItem.quantity;
 
               return (
-                <div key={orderItem.id} className="breakdown-item">
+                <div key={idx} className="breakdown-item">
                   <div className="breakdown-header">
                     <span className="breakdown-name">
-                      {menuItem.name || "Unknown Item"}
+                      {orderItem.name || "Unknown Item"}
                     </span>
                     <span className="breakdown-total">
                       {formatCurrency(totalPrice)}
@@ -265,13 +327,10 @@ const OrderDetail = () => {
                   </div>
                   <div className="breakdown-details">
                     <span className="breakdown-calc">
-                      {menuItem.portionSize || "N/A"} × {orderItem.quantity}{" "}
-                      guests = {totalWeight}
-                      {(menuItem.portionSize || "").match(/\d+/g) ? "g" : ""}
+                      {orderItem.measurement === 'pcs' ? '' : orderItem.measurement} {orderItem.quantity} {orderItem.measurement === 'pcs' ? 'pcs' : ''}
                     </span>
                     <span className="breakdown-calc">
-                      {formatCurrency(menuItem.price || 0)} ×{" "}
-                      {orderItem.quantity} = {formatCurrency(totalPrice)}
+                      {formatCurrency(orderItem.price || 0)} × {orderItem.quantity} = {formatCurrency(totalPrice)}
                     </span>
                   </div>
                 </div>

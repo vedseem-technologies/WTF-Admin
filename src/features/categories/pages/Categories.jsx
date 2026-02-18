@@ -79,7 +79,6 @@ const Categories = () => {
 
   const handleOpenModal = async (category = null) => {
     // Debug: Full menu items
-    console.log("Full Menu Items (Source of Truth):", menuItems);
 
     if (category) {
       setEditingCategory(category);
@@ -93,7 +92,6 @@ const Categories = () => {
       setIsLoadingSelection(true);
       try {
         const savedSelection = await getCategoryMenuSelection(category._id);
-        console.log('Loaded menu selection for category:', savedSelection);
 
         if (savedSelection) {
           const mapItems = (data) => {
@@ -134,11 +132,7 @@ const Categories = () => {
           setUnselectedDesserts(filterByCategory(mappedUnselectedDesserts, 'Dessert', 4));
           setUnselectedBreadRice(filterByCategory(mappedUnselectedBreadRice, 'Rice & Bread', 3));
 
-          // Debug: Category-wise filtered items (After Load)
-          console.log("Strictly Filtered Loaded Items:", {
-            starters: { selected: mappedSelectedStarters.length, unselected: mappedUnselectedStarters.length },
-            mains: { selected: mappedSelectedMain.length, unselected: mappedUnselectedMain.length },
-          });
+  
 
         } else {
           // New category implementation fallback
@@ -271,11 +265,7 @@ const Categories = () => {
     refreshCategories();
 
     if (categoryId) {
-      // Debug: Log state before constructing payload
-      console.log("Preparing to Save Category - State Check:", {
-        selected: { starters: selectedStarters.length, mains: selectedMainCourse.length },
-        unselected: { starters: unselectedStarters.length, mains: unselectedMainCourse.length }
-      });
+ 
 
       const menuSelection = {
         starters: selectedStarters.map((item) => item._id),
@@ -288,7 +278,7 @@ const Categories = () => {
         unselectedBreadRice: unselectedBreadRice.map(i => i._id),
       };
 
-      console.log("FINAL PAYLOAD being sent to API (Category):", JSON.stringify(menuSelection, null, 2));
+   
       await saveCategoryMenuSelection(categoryId, menuSelection);
     }
 

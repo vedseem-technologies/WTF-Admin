@@ -80,7 +80,6 @@ const Occasions = () => {
 
   const handleOpenModal = async (occasion = null) => {
     // Debug: Full menu items
-    console.log("Full Menu Items (Source of Truth):", menuItems);
 
     if (occasion) {
       setEditingOccasion(occasion);
@@ -94,7 +93,6 @@ const Occasions = () => {
       setIsLoadingSelection(true);
       try {
         const savedSelection = await getOccasionMenuSelection(occasion._id);
-        console.log('Loaded menu selection for occasion:', savedSelection);
 
         if (savedSelection) {
           const mapItems = (data) => {
@@ -135,11 +133,7 @@ const Occasions = () => {
           setUnselectedDesserts(filterByCategory(mappedUnselectedDesserts, 'Dessert', 4));
           setUnselectedBreadRice(filterByCategory(mappedUnselectedBreadRice, 'Rice & Bread', 3));
 
-          // Debug: Category-wise filtered items (After Load)
-          console.log("Strictly Filtered Loaded Items:", {
-            starters: { selected: mappedSelectedStarters.length, unselected: mappedUnselectedStarters.length },
-            mains: { selected: mappedSelectedMain.length, unselected: mappedUnselectedMain.length },
-          });
+   
 
         } else {
           // New implementation fallback

@@ -246,11 +246,6 @@ const Services = () => {
     refreshServices();
 
     if (serviceId) {
-      // (Menu selection logic same as before)
-      console.log("Preparing to Save Service - State Check:", {
-        selected: { starters: selectedStarters.length, mains: selectedMainCourse.length },
-        unselected: { starters: unselectedStarters.length, mains: unselectedMainCourse.length }
-      });
 
       const menuSelection = {
         starters: selectedStarters.map((item) => item._id),

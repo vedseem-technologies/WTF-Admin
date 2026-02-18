@@ -153,7 +153,6 @@ const Orders = () => {
                   <th>Order ID</th>
                   <th>Order Date</th>
                   <th>Customer</th>
-                  <th>Event Date</th>
                   <th>Amount</th>
                   <th>Status</th>
                   <th>Action</th>
@@ -174,7 +173,6 @@ const Orders = () => {
                         <div className="customer-phone">{order.userId?.phone}</div>
                       </div>
                     </td>
-                    <td>{order.bookingDetails?.date ? formatDate(order.bookingDetails.date) : 'N/A'}</td>
                     <td className="font-semibold">{formatCurrency(order.totalAmount)}</td>
                     <td>
                       <span
