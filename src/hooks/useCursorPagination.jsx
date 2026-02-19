@@ -82,7 +82,6 @@ const useCursorPagination = (endpoint, options = {}) => {
     pageInfo,
     handleNext,
     handlePrev,
-    handlePrev,
     refresh, // Used by components to reload after Add/Delete
     setData // Expose setData for optimistic updates
   };

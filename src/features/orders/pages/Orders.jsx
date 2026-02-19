@@ -151,8 +151,9 @@ const Orders = () => {
               <thead>
                 <tr>
                   <th>Order ID</th>
-                  <th>Order Date</th>
+                  <th>Event Details</th>
                   <th>Customer</th>
+                  <th>Address</th>
                   <th>Amount</th>
                   <th>Status</th>
                   <th>Action</th>
@@ -161,17 +162,27 @@ const Orders = () => {
               <tbody>
                 {orders.map((order) => (
                   <tr
-                    key={order._id || order.id} // Backend uses _id, frontend might have mapped to id. Model has orderId string tool
-                    onClick={() => navigate(`/orders/${order.orderId}`)} // Use orderId string (WTF-...)
+                    key={order._id || order.id}
+                    onClick={() => navigate(`/orders/${order.orderId}`)}
                     className="clickable-row"
                   >
-                    <td className="font-semibold text-primary">#{order.orderId}</td>
-                    <td>{formatDate(order.createdAt)}</td>
+                    <td className="font-semibold text-primary">
+                      #{order.orderId}
+                      <div className="text-xs text-gray-500">{formatDate(order.createdAt)}</div>
+                    </td>
+                    <td>
+                      <div className="text-sm font-medium">{order.bookingDetails?.date || 'N/A'}</div>
+                      <div className="text-xs text-gray-500">{order.bookingDetails?.time || ''}</div>
+                    </td>
                     <td>
                       <div className="customer-cell">
-                        <div className="customer-name">{order.userId?.firstName} {order.userId?.lastName}</div>
-                        <div className="customer-phone">{order.userId?.phone}</div>
+                        <div className="customer-name font-bold">{order.userId?.firstName} {order.userId?.lastName}</div>
+                        <div className="text-xs text-gray-600">{order.userId?.email}</div>
+                        <div className="customer-phone text-xs text-blue-600">{order.userId?.phone}</div>
                       </div>
+                    </td>
+                    <td className="max-w-xs truncate" title={order.address}>
+                      {order.address || 'N/A'}
                     </td>
                     <td className="font-semibold">{formatCurrency(order.totalAmount)}</td>
                     <td>
