@@ -1,10 +1,11 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { Pencil, Trash2, FileText } from "lucide-react";
 import { useData } from "../../../context/DataContext";
 import Modal from "../../../components/ui/Modal";
 import ImageUpload from "../../../components/ui/ImageUpload";
 import { getThumbnail } from "../../../utils/imageOptimizer";
-import "./Blogs.css";
 import useCursorPagination from "../../../hooks/useCursorPagination";
+import { useDialog } from "../../../context/DialogContext";
 
 const BLOG_TYPES = [
   "Recipe",
@@ -17,6 +18,7 @@ const BLOG_TYPES = [
 
 const Blogs = () => {
   const { addBlog, updateBlog, deleteBlog } = useData();
+  const { confirm } = useDialog();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
@@ -34,15 +36,14 @@ const Blogs = () => {
     handleNext,
     handlePrev,
     refresh: refreshBlogs,
-    setData
-  } = useCursorPagination('/api/blogs/getblogs', {
+    setData,
+  } = useCursorPagination("/api/blogs/getblogs", {
     limit: 12,
     filters: {
       search: debouncedSearchTerm || undefined,
-      blogType: blogTypeFilter !== 'all' ? blogTypeFilter : undefined
-    }
+      blogType: blogTypeFilter !== "all" ? blogTypeFilter : undefined,
+    },
   });
-
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBlog, setEditingBlog] = useState(null);
@@ -94,7 +95,9 @@ const Blogs = () => {
       // Optimistic Update for Edit
       const originalItems = [...blogs];
       const updatedItem = { ...editingBlog, ...formData };
-      setData(prev => prev.map(item => item._id === editingBlog._id ? updatedItem : item));
+      setData((prev) =>
+        prev.map((item) => (item._id === editingBlog._id ? updatedItem : item)),
+      );
 
       try {
         await updateBlog(editingBlog._id, formData);
@@ -109,145 +112,174 @@ const Blogs = () => {
       const optimisticItem = { ...formData, _id: tempId };
 
       // Prepend to list immediately
-      setData(prev => [optimisticItem, ...prev]);
+      setData((prev) => [optimisticItem, ...prev]);
 
       try {
         const serverItem = await addBlog(formData);
         // Replace temp item with real item
-        setData(prev => prev.map(item => item._id === tempId ? serverItem : item));
+        setData((prev) =>
+          prev.map((item) => (item._id === tempId ? serverItem : item)),
+        );
       } catch (e) {
         // Remove temp item on failure
-        setData(prev => prev.filter(item => item._id !== tempId));
+        setData((prev) => prev.filter((item) => item._id !== tempId));
         handleError(e);
       }
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this blog?")) {
-      try {
-        await deleteBlog(id);
-        refreshBlogs();
-      } catch (e) { handleError(e); }
+    const ok = await confirm("This action cannot be undone.", {
+      title: "Delete Blog?",
+      variant: "danger",
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+    try {
+      await deleteBlog(id);
+      refreshBlogs();
+    } catch (e) {
+      handleError(e);
     }
   };
 
   return (
-    <div className="page-container">
-      <div className="page-filters">
+    <div className="p-6">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
         <input
           type="text"
-          className="form-control search-input"
-          placeholder="🔍 Search blogs..."
+          className="flex-1 min-w-[200px] px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-light transition-all"
+          placeholder="Search blogs..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <div className="filter-buttons" style={{ marginLeft: "auto" }}>
+        <div className="flex items-center gap-2 ml-auto">
           <select
-            className="form-select"
-            style={{ width: 'auto', marginRight: '10px' }}
+            className="px-3 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
             value={blogTypeFilter}
             onChange={(e) => setBlogTypeFilter(e.target.value)}
           >
             <option value="all">All Types</option>
-            {BLOG_TYPES.map(type => (
-              <option key={type} value={type}>{type}</option>
+            {BLOG_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
             ))}
           </select>
-          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+          <button
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-gradient text-white rounded-lg font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm"
+            onClick={() => handleOpenModal()}
+          >
             + Add New
           </button>
         </div>
       </div>
 
-      <div className="table-container">
+      <div className="bg-white rounded-xl shadow-md border border-border overflow-hidden">
         {loadingBlogs && blogs.length === 0 ? (
-          <div className="loading-state">
-            <h3>...loading</h3>
+          <div className="flex justify-center py-16 text-gray-400">
+            Loading...
           </div>
         ) : blogs.length > 0 ? (
           <>
-            <table className="table blogs-table">
-              <thead>
-                <tr>
-                  <th>Image</th>
-                  <th>Title</th>
-                  <th>Blog Type</th>
-                  <th>Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {blogs.map((blog) => (
-                  <tr key={blog._id}>
-                    <td>
-                      <div className="blog-image-cell">
-                        <img
-                          src={getThumbnail(blog.image)}
-                          alt={blog.title}
-                          loading="lazy"
-                          referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
-                        />
-                      </div>
-                    </td>
-                    <td>
-                      <div className="blog-title-cell">
-                        <h4>{blog.title}</h4>
-                        <p>{blog.description.substring(0, 80)}...</p>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="blog-type-badge">{blog.blogType}</span>
-                    </td>
-                    <td>{new Date(blog.date).toLocaleDateString()}</td>
-                    <td>
-                      <div className="action-buttons">
-                        <button
-                          className="btn btn-sm btn-outline"
-                          onClick={() => handleOpenModal(blog)}
-                          style={{ marginRight: "8px" }}
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => handleDelete(blog._id)}
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-bg-hover border-b-2 border-border">
+                    {["Image", "Title", "Type", "Date", "Actions"].map((h) => (
+                      <th
+                        key={h}
+                        className="px-5 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {/* Pagination Controls */}
-            <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+                </thead>
+                <tbody>
+                  {blogs.map((blog) => (
+                    <tr
+                      key={blog._id}
+                      className="border-b border-gray-50 hover:bg-bg-hover transition-colors last:border-0"
+                    >
+                      <td className="px-5 py-3">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          <img
+                            src={getThumbnail(blog.image)}
+                            alt={blog.title}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="font-semibold text-sm text-secondary max-w-xs truncate">
+                          {blog.title}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-0.5 max-w-xs truncate">
+                          {blog.description?.substring(0, 70)}…
+                        </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-info-light text-info rounded-full">
+                          {blog.blogType}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-sm text-gray-500 whitespace-nowrap">
+                        {new Date(blog.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="px-3 py-1.5 text-xs border-2 border-primary text-primary rounded-lg font-medium hover:bg-primary hover:text-white transition-all"
+                            onClick={() => handleOpenModal(blog)}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            className="px-3 py-1.5 text-xs bg-danger text-white rounded-lg font-medium hover:bg-red-700 transition-all"
+                            onClick={() => handleDelete(blog._id)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
               <button
                 onClick={handlePrev}
                 disabled={!pageInfo.hasPrevPage || loadingBlogs}
-                className="btn btn-outline"
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
-                ⬅️ Previous
+                ← Previous
               </button>
-              <span className="text-gray-500">
-                {loadingBlogs ? 'Loading...' : ''}
+              <span className="text-sm text-gray-500">
+                {loadingBlogs ? (
+                  <span className="animate-pulse">Loading…</span>
+                ) : (
+                  ""
+                )}
               </span>
               <button
                 onClick={handleNext}
                 disabled={!pageInfo.hasNextPage || loadingBlogs}
-                className="btn btn-outline"
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
-                Next ➡️
+                Next →
               </button>
             </div>
           </>
         ) : (
-          <div className="empty-state">
-            <span className="empty-icon">📝</span>
-            <h3>No blogs found</h3>
-            <p>Start by adding your first blog post</p>
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <FileText size={48} className="mb-4 text-gray-400" />
+            <h3 className="text-lg font-semibold mb-1">No blogs found</h3>
+            <p className="text-sm">Start by adding your first blog post</p>
           </div>
         )}
       </div>
@@ -257,18 +289,19 @@ const Blogs = () => {
         onClose={handleCloseModal}
         title={editingBlog ? "Edit Blog" : "Add New Blog"}
       >
-        <form onSubmit={handleSubmit} className="blog-form">
+        <form onSubmit={handleSubmit}>
           <ImageUpload
             value={formData.image}
             onChange={(value) => setFormData({ ...formData, image: value })}
             label="Blog Image *"
           />
-
-          <div className="form-group">
-            <label className="form-label">Title *</label>
+          <div className="mb-4">
+            <label className="block mb-1.5 text-sm font-medium text-secondary">
+              Title *
+            </label>
             <input
               type="text"
-              className="form-control"
+              className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-light transition-all"
               placeholder="Enter blog title"
               value={formData.title}
               onChange={(e) =>
@@ -277,11 +310,12 @@ const Blogs = () => {
               required
             />
           </div>
-
-          <div className="form-group">
-            <label className="form-label">Description *</label>
+          <div className="mb-4">
+            <label className="block mb-1.5 text-sm font-medium text-secondary">
+              Description *
+            </label>
             <textarea
-              className="form-control"
+              className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-light transition-all resize-none"
               placeholder="Enter blog description"
               value={formData.description}
               onChange={(e) =>
@@ -291,13 +325,14 @@ const Blogs = () => {
               rows="5"
             />
           </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Date *</label>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block mb-1.5 text-sm font-medium text-secondary">
+                Date *
+              </label>
               <input
                 type="date"
-                className="form-control"
+                className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
                 value={formData.date}
                 onChange={(e) =>
                   setFormData({ ...formData, date: e.target.value })
@@ -305,11 +340,12 @@ const Blogs = () => {
                 required
               />
             </div>
-
-            <div className="form-group">
-              <label className="form-label">Blog Type *</label>
+            <div>
+              <label className="block mb-1.5 text-sm font-medium text-secondary">
+                Blog Type *
+              </label>
               <select
-                className="form-select"
+                className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
                 value={formData.blogType}
                 onChange={(e) =>
                   setFormData({ ...formData, blogType: e.target.value })
@@ -324,16 +360,18 @@ const Blogs = () => {
               </select>
             </div>
           </div>
-
-          <div className="modal-actions">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
             <button
               type="button"
-              className="btn btn-outline"
               onClick={handleCloseModal}
+              className="px-5 py-2.5 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all"
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button
+              type="submit"
+              className="px-5 py-2.5 bg-primary-gradient text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+            >
               {editingBlog ? "Update Blog" : "Add Blog"}
             </button>
           </div>

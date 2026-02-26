@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import { DataProvider } from "./context/DataContext";
 import { AuthProvider } from "./context/AuthContext";
+import { DialogProvider } from "./context/DialogContext";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import Dashboard from "./features/dashboard/pages/Dashboard";
@@ -30,19 +31,18 @@ import Orders from "./features/orders/pages/Orders";
 import OrderDetail from "./features/orders/pages/OrderDetail";
 import Testimonials from "./features/testimonials/pages/Testimonials";
 import Events from "./features/events/pages/Events";
-import "./styles/index.css";
-import "./App.css";
 import GlobalLoader from "./components/feedback/GlobalLoader";
 import ProtectedRoute from "./features/auth/components/ProtectedRoute";
+import "./index.css";
 
 const Layout = () => {
   return (
-    <div className="app">
+    <div className="flex h-screen overflow-hidden bg-bg-main">
       <GlobalLoader />
       <Sidebar />
-      <div className="main-content">
+      <div className="flex-1 flex flex-col min-w-0 ml-[260px]">
         <Header />
-        <div className="content-wrapper">
+        <div className="flex-1 overflow-y-auto pt-[70px] bg-bg-main">
           <Outlet />
         </div>
       </div>
@@ -54,44 +54,46 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <DataProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
+        <DialogProvider>
+          <DataProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
 
-            <Route
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/occasions" element={<Occasions />} />
               <Route
-                path="/occasions/:id/report"
-                element={<OccasionReport />}
-              />
-              <Route path="/packages/:id" element={<PackageDetail />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/categories" element={<Categories />} />
-              <Route path="/menu/starter" element={<Starter />} />
-              <Route path="/menu/main-course" element={<MainCourse />} />
-              <Route path="/menu/dessert" element={<Dessert />} />
-              <Route path="/menu/bread-rice" element={<BreadRice />} />
-              <Route path="/menu-items" element={<MenuItems />} />
-              <Route path="/blogs" element={<Blogs />} />
-              <Route path="/popular-items" element={<PopularItems />} />
-              <Route path="/range-menus" element={<RangeMenus />} />
-              <Route path="/testimonials" element={<Testimonials />} />
-              <Route path="/events" element={<Events />} />
-              <Route path="/carousel" element={<Carousel />} />
-              <Route path="/banner" element={<Banner />} />
-              <Route path="/youtube" element={<Youtube />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/orders/:id" element={<OrderDetail />} />
-            </Route>
-          </Routes>
-        </DataProvider>
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/occasions" element={<Occasions />} />
+                <Route
+                  path="/occasions/:id/report"
+                  element={<OccasionReport />}
+                />
+                <Route path="/packages/:id" element={<PackageDetail />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/menu/starter" element={<Starter />} />
+                <Route path="/menu/main-course" element={<MainCourse />} />
+                <Route path="/menu/dessert" element={<Dessert />} />
+                <Route path="/menu/bread-rice" element={<BreadRice />} />
+                <Route path="/menu-items" element={<MenuItems />} />
+                <Route path="/blogs" element={<Blogs />} />
+                <Route path="/popular-items" element={<PopularItems />} />
+                <Route path="/range-menus" element={<RangeMenus />} />
+                <Route path="/testimonials" element={<Testimonials />} />
+                <Route path="/events" element={<Events />} />
+                <Route path="/carousel" element={<Carousel />} />
+                <Route path="/banner" element={<Banner />} />
+                <Route path="/youtube" element={<Youtube />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/orders/:id" element={<OrderDetail />} />
+              </Route>
+            </Routes>
+          </DataProvider>
+        </DialogProvider>
       </AuthProvider>
     </Router>
   );

@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
+import { Search, Pencil, Trash2, MessageSquare, Star } from "lucide-react";
 import { useData } from "../../../context/DataContext";
 import Modal from "../../../components/ui/Modal";
 import useCursorPagination from "../../../hooks/useCursorPagination";
+import { useDialog } from "../../../context/DialogContext";
 
 const Testimonials = () => {
-  const {
-    addTestimonial,
-    updateTestimonial,
-    deleteTestimonial,
-  } = useData();
+  const { addTestimonial, updateTestimonial, deleteTestimonial } = useData();
+  const { confirm, alert } = useDialog();
 
   const [searchTerm, setSearchTerm] = useState("");
   // Debounce search
@@ -24,12 +23,12 @@ const Testimonials = () => {
     pageInfo,
     handleNext,
     handlePrev,
-    refresh: refreshTestimonials
-  } = useCursorPagination('/api/testimonials', {
+    refresh: refreshTestimonials,
+  } = useCursorPagination("/api/testimonials", {
     limit: 12,
     filters: {
-      search: debouncedSearchTerm || undefined
-    }
+      search: debouncedSearchTerm || undefined,
+    },
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -93,62 +92,65 @@ const Testimonials = () => {
       handleCloseModal();
     } catch (error) {
       console.error("Error saving testimonial:", error);
-      alert("Failed to save testimonial. Please check the console for details.");
+      await alert("Failed to save testimonial. Please try again.", {
+        title: "Error",
+        variant: "danger",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this testimonial?")) {
-      try {
-        await deleteTestimonial(id);
-        refreshTestimonials();
-      } catch (error) {
-        console.error("Error deleting testimonial:", error);
-        alert("Failed to delete testimonial.");
-      }
+    const ok = await confirm("This action cannot be undone.", {
+      title: "Delete Testimonial?",
+      variant: "danger",
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+    try {
+      await deleteTestimonial(id);
+      refreshTestimonials();
+    } catch (error) {
+      console.error("Error deleting testimonial:", error);
+      await alert("Failed to delete testimonial.", {
+        title: "Error",
+        variant: "danger",
+      });
     }
   };
 
   return (
-    <div className="page-container">
-      <div className="page-header mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Testimonials</h1>
-        <p className="text-gray-600">
-          Manage what your clients say about you.
-        </p>
-      </div>
-
-      <div className="page-filters flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
-        <div className="relative w-full max-w-md">
+    <div className="p-6">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="relative flex-1 min-w-[200px]">
           <input
             type="text"
-            className="form-control search-input pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full pl-9 pr-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-light transition-all"
             placeholder="Search testimonials by name or role..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+            <Search size={18} />
+          </span>
         </div>
-        <div className="filter-buttons ml-4">
-          <button
-            className="btn btn-primary"
-            onClick={() => handleOpenModal()}
-          >
-            <span className="mr-2">+</span> Add New
-          </button>
-        </div>
+        <button
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-gradient text-white rounded-lg font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm"
+          onClick={() => handleOpenModal()}
+        >
+          + Add New
+        </button>
       </div>
 
-      <div className="table-container bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl shadow-md border border-border overflow-hidden">
         {loadingTestimonials && testimonials.length === 0 ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-xl text-gray-500">Loading testimonials...</div>
           </div>
         ) : testimonials.length > 0 ? (
           <>
-            <table className="table w-full">
+            <table className="w-full border-collapse">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -208,7 +210,15 @@ const Testimonials = () => {
                       {testimonial.date}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-500">
-                      {"⭐".repeat(testimonial.rating)}
+                      <div className="flex">
+                        {[...Array(testimonial.rating)].map((_, i) => (
+                          <Star
+                            key={i}
+                            size={16}
+                            className="fill-current text-yellow-500"
+                          />
+                        ))}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
@@ -216,45 +226,48 @@ const Testimonials = () => {
                         onClick={() => handleOpenModal(testimonial)}
                         title="Edit"
                       >
-                        ✏️
+                        <Pencil size={16} />
                       </button>
                       <button
                         className="text-red-600 hover:text-red-900 transition-colors"
                         onClick={() => handleDelete(testimonial._id)}
                         title="Delete"
                       >
-                        🗑️
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {/* Pagination Controls */}
-            <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
               <button
                 onClick={handlePrev}
                 disabled={!pageInfo.hasPrevPage || loadingTestimonials}
-                className="btn btn-outline"
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
-                ⬅️ Previous
+                ← Previous
               </button>
-              <span className="text-gray-500">
-                {loadingTestimonials ? 'Loading...' : ''}
+              <span className="text-sm text-gray-500">
+                {loadingTestimonials ? (
+                  <span className="animate-pulse">Loading…</span>
+                ) : (
+                  ""
+                )}
               </span>
               <button
                 onClick={handleNext}
                 disabled={!pageInfo.hasNextPage || loadingTestimonials}
-                className="btn btn-outline"
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
-                Next ➡️
+                Next →
               </button>
             </div>
           </>
         ) : (
-          <div className="empty-state p-12 text-center text-gray-500">
-            <div className="text-4xl mb-4">💬</div>
-            <p className="text-lg">No testimonials found</p>
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <MessageSquare size={48} className="mb-4 text-gray-400" />
+            <p className="text-lg font-semibold">No testimonials found</p>
           </div>
         )}
       </div>
@@ -265,8 +278,6 @@ const Testimonials = () => {
         title={editingTestimonial ? "Edit Testimonial" : "Add New Testimonial"}
       >
         <form onSubmit={handleSubmit} className="modal-form space-y-4">
-
-
           <div className="grid grid-cols-2 gap-4">
             <div className="form-group">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -353,29 +364,25 @@ const Testimonials = () => {
             </div>
           </div>
 
-          <div className="modal-actions flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-4">
             <button
               type="button"
-              className="btn btn-secondary"
               onClick={handleCloseModal}
               disabled={isSubmitting}
+              className="px-5 py-2.5 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all disabled:opacity-60"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
               disabled={isSubmitting}
+              className="px-5 py-2.5 bg-primary-gradient text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60"
             >
-              {isSubmitting ? (
-                <>
-                  <span className="opacity-75 mr-2">Saving...</span>
-                </>
-              ) : editingTestimonial ? (
-                "Save Changes"
-              ) : (
-                "Add Testimonial"
-              )}
+              {isSubmitting
+                ? "Saving..."
+                : editingTestimonial
+                  ? "Save Changes"
+                  : "Add Testimonial"}
             </button>
           </div>
         </form>

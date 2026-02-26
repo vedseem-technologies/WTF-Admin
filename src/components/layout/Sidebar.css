@@ -116,6 +116,7 @@
     justify-content: center;
     width: 24px;
     transition: transform var(--transition-base);
+    pointer-events: none;
 }
 
 .nav-label {

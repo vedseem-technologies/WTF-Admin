@@ -1,20 +1,9 @@
 import { useState, useEffect } from "react";
+import { ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useData } from "../../../context/DataContext";
-import "./Orders.css";
 import useCursorPagination from "../../../hooks/useCursorPagination";
 
 const Orders = () => {
-  // orders was previously from useData, now we fetch locally. 
-  // DataContext might still supply occasions/services but checking 'Orders.jsx' code it just used 'orders'.
-  // Wait, line 7 in original: const { orders, occasions } = useData();
-  // It doesn't seem to use 'occasions' in the rendered JSX, only 'orders'.
-  // Let me double check if 'occasions' is used.
-  // Original code:
-  // 7:   const { orders, occasions } = useData();
-  // It doesn't use occasions anywhere in the snippet I saw.
-  // I'll remove occasions for now, or keep useData for it if needed later.
-
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,31 +21,21 @@ const Orders = () => {
     pageInfo,
     handleNext,
     handlePrev,
-    refresh: refreshOrders
-  } = useCursorPagination('/api/orders', {
+    refresh: refreshOrders,
+  } = useCursorPagination("/api/orders", {
     limit: 10,
     filters: {
       search: debouncedSearchTerm || undefined,
-      status: statusFilter !== 'all' ? statusFilter : undefined
-    }
+      status: statusFilter !== "all" ? statusFilter : undefined,
+    },
   });
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: "warning", // Lowercase from backed usually, but mapped to capitalize in UI? Backend defaults 'pending'.
-      // Model says enum: ['pending', 'confirmed', ...].
-      // Frontend original uniqueStatuses: ["Pending", "Confirmed"...]. 
-      // I should handle case sensitivity.
-      // Backend returns lowercase probably.
-      // Let's safe guard.
+      pending: "warning", 
       confirmed: "info",
-      processing: "primary", // "In Preparation" in frontend? Model has 'processing'. 
-      // Need to map model status to frontend display or vice versa.
-      // Model: ['pending', 'confirmed', 'processing', 'completed', 'cancelled']
-      // Frontend uniqueStatuses: ["Pending", "Confirmed", "In Preparation", "Delivered", "Cancelled"]
-      // I should just format the display status.
-      delivered: "success", // Model 'completed'? Or 'delivered'? Model says 'completed'. Frontend says 'Delivered'.
-      // I might need to map status for display.
+      processing: "primary", 
+      delivered: "success", 
       completed: "success",
       cancelled: "danger",
     };
@@ -64,13 +43,16 @@ const Orders = () => {
   };
 
   const displayStatus = (status) => {
-    if (!status) return '';
+    if (!status) return "";
     const map = {
-      'processing': 'In Preparation',
-      'completed': 'Delivered'
+      processing: "In Preparation",
+      completed: "Delivered",
     };
-    return map[status.toLowerCase()] || status.charAt(0).toUpperCase() + status.slice(1);
-  }
+    return (
+      map[status.toLowerCase()] ||
+      status.charAt(0).toUpperCase() + status.slice(1)
+    );
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-IN", {
@@ -97,66 +79,57 @@ const Orders = () => {
   ];
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        {/* <div className="page-header-content">
-          <h2 className="page-title-big">📋 Orders Management</h2>
-          <p className="page-description">
-            View and manage all customer orders
-          </p>
-        </div> */}
-        {/* Stats removed or need separate API call for counts if not paginated. 
-            Frontend had stats based on *all* orders in memory. 
-            With pagination we don't have all orders. 
-            I will hide stats or just show what's loaded (which is misleading).
-            Better to remove simple stats from filtered view or fetch stats separately.
-            I'll restore the basic layout but remove stats for now as they require aggregation API.
-        */}
+    <div className="p-6">
+      <div className="mb-1" />
+
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <input
+          type="text"
+          className="flex-1 min-w-[200px] px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-light transition-all"
+          placeholder="Search by order ID or name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="px-3 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="all">All Status</option>
+          {uniqueStatuses.map((status) => (
+            <option key={status} value={status}>
+              {displayStatus(status)}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <div className="page-filters orders-filters">
-        <div className="orders-actions">
-          <input
-            type="text"
-            className="form-control search-input"
-            placeholder="🔍 Search by order ID or name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-
-          <select
-            className="form-select filter-select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            {uniqueStatuses.map((status) => (
-              <option key={status} value={status}>
-                {displayStatus(status)}
-              </option>
-            ))}
-          </select>
-        </div>
-        {/* Removing statistics panel as it relies on full dataset */}
-      </div>
-
-      <div className="table-container">
+      <div className="bg-white rounded-xl shadow-md border border-border overflow-hidden">
         {loadingOrders && orders.length === 0 ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-xl text-gray-500">Loading orders...</div>
           </div>
         ) : orders.length > 0 ? (
           <>
-            <table className="table orders-table">
+            <table className="w-full border-collapse">
               <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>Event Details</th>
-                  <th>Customer</th>
-                  <th>Address</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                <tr className="bg-bg-hover border-b-2 border-border">
+                  {[
+                    "Order ID",
+                    "Event Details",
+                    "Customer",
+                    "Address",
+                    "Amount",
+                    "Status",
+                    "Action",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-5 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -164,37 +137,52 @@ const Orders = () => {
                   <tr
                     key={order._id || order.id}
                     onClick={() => navigate(`/orders/${order.orderId}`)}
-                    className="clickable-row"
+                    className="border-b border-gray-50 hover:bg-bg-hover transition-colors cursor-pointer last:border-0"
                   >
-                    <td className="font-semibold text-primary">
+                    <td className="px-5 py-3 font-semibold text-primary text-sm">
                       #{order.orderId}
-                      <div className="text-xs text-gray-500">{formatDate(order.createdAt)}</div>
-                    </td>
-                    <td>
-                      <div className="text-sm font-medium">{order.bookingDetails?.date || 'N/A'}</div>
-                      <div className="text-xs text-gray-500">{order.bookingDetails?.time || ''}</div>
-                    </td>
-                    <td>
-                      <div className="customer-cell">
-                        <div className="customer-name font-bold">{order.userId?.firstName} {order.userId?.lastName}</div>
-                        <div className="text-xs text-gray-600">{order.userId?.email}</div>
-                        <div className="customer-phone text-xs text-blue-600">{order.userId?.phone}</div>
+                      <div className="text-xs text-gray-400 font-normal">
+                        {formatDate(order.createdAt)}
                       </div>
                     </td>
-                    <td className="max-w-xs truncate" title={order.address}>
-                      {order.address || 'N/A'}
+                    <td className="px-5 py-3">
+                      <div className="text-sm font-medium text-secondary">
+                        {order.bookingDetails?.date || "N/A"}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {order.bookingDetails?.time || ""}
+                      </div>
                     </td>
-                    <td className="font-semibold">{formatCurrency(order.totalAmount)}</td>
-                    <td>
+                    <td className="px-5 py-3">
+                      <div className="font-bold text-sm text-secondary">
+                        {order.userId?.firstName} {order.userId?.lastName}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {order.userId?.email}
+                      </div>
+                      <div className="text-xs text-primary">
+                        {order.userId?.phone}
+                      </div>
+                    </td>
+                    <td
+                      className="px-5 py-3 text-sm text-gray-600 max-w-[140px] truncate"
+                      title={order.address}
+                    >
+                      {order.address || "N/A"}
+                    </td>
+                    <td className="px-5 py-3 font-semibold text-secondary text-sm">
+                      {formatCurrency(order.totalAmount)}
+                    </td>
+                    <td className="px-5 py-3">
                       <span
-                        className={`badge badge-${getStatusColor(order.status)}`}
+                        className={`inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-full ${{ warning: "bg-warning-light text-warning", info: "bg-info-light text-info", primary: "bg-primary/10 text-primary", success: "bg-success-light text-success", danger: "bg-danger-light text-danger" }[getStatusColor(order.status)] || "bg-gray-100 text-gray-700"}`}
                       >
                         {displayStatus(order.status)}
                       </span>
                     </td>
-                    <td>
+                    <td className="px-5 py-3">
                       <button
-                        className="btn btn-sm btn-primary"
+                        className="px-3 py-1.5 text-xs bg-primary-gradient text-white rounded-lg font-medium hover:shadow-md transition-all"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/orders/${order.orderId}`);
@@ -207,32 +195,37 @@ const Orders = () => {
                 ))}
               </tbody>
             </table>
-            {/* Pagination Controls */}
-            <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
               <button
                 onClick={handlePrev}
                 disabled={!pageInfo.hasPrevPage || loadingOrders}
-                className="btn btn-outline"
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
-                ⬅️ Previous
+                ← Previous
               </button>
-              <span className="text-gray-500">
-                {loadingOrders ? 'Loading...' : ''}
+              <span className="text-sm text-gray-500">
+                {loadingOrders ? (
+                  <span className="animate-pulse">Loading…</span>
+                ) : (
+                  ""
+                )}
               </span>
               <button
                 onClick={handleNext}
                 disabled={!pageInfo.hasNextPage || loadingOrders}
-                className="btn btn-outline"
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
-                Next ➡️
+                Next →
               </button>
             </div>
           </>
         ) : (
-          <div className="empty-state">
-            <span className="empty-icon">📋</span>
-            <h3>No orders found</h3>
-            <p>Try adjusting your filters</p>
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <ClipboardList size={48} className="mb-4 text-gray-400" />
+            <div className="text-xl font-bold text-secondary mb-2">
+              No orders found
+            </div>
+            <p className="text-sm">Try adjusting your filters</p>
           </div>
         )}
       </div>

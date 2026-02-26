@@ -1,16 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
-import {
-  mockOccasions,
-  mockServices,
-  mockCategories,
-  mockMenuItems,
-  mockOrders,
-  mockBlogs,
-  mockPopularItems,
-  mockRangeMenus,
-  mockYoutubeLinks,
-} from "../utils/mockData";
 
 const DataContext = createContext();
 
@@ -29,7 +18,7 @@ export const DataProvider = ({ children }) => {
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
-  const [orders, setOrders] = useState(mockOrders);
+
   const [popularItems, setPopularItems] = useState([]);
   const [rangeMenus, setRangeMenus] = useState([]);
   const [youtubeLinks, setYoutubeLinks] = useState([]);
@@ -319,48 +308,18 @@ export const DataProvider = ({ children }) => {
   };
 
   const toggleMenuItemActive = async (id) => {
-    const item = menuItems.find((mi) => mi._id === id);
-    if (item) {
-      try {
-        const response = await axios.put(
-          `${import.meta.env.VITE_BACKEND_URL}/api/menu-items/${id}`,
-          { ...item, active: !item.active },
-        );
-        setMenuItems(
-          menuItems.map((mi) => (mi._id === id ? response.data : mi)),
-        );
-      } catch (error) {
-        console.error("Error toggling menu item status:", error);
-      }
+    try {
+      const response = await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/api/menu-items/${id}/toggle-active`,
+      );
+      setMenuItems(menuItems.map((mi) => (mi._id === id ? response.data : mi)));
+    } catch (error) {
+      console.error("Error toggling menu item status:", error);
     }
-  };
-
-  const addOrder = (order) => {
-    const newOrder = {
-      ...order,
-      id: Math.max(...orders.map((o) => o.id), 0) + 1,
-    };
-    setOrders([...orders, newOrder]);
-  };
-
-  const updateOrder = (id, updatedOrder) => {
-    setOrders(orders.map((o) => (o.id === id ? { ...o, ...updatedOrder } : o)));
-  };
-
-  const updateOrderStatus = (id, status) => {
-    setOrders(orders.map((o) => (o.id === id ? { ...o, status } : o)));
-  };
-
-  const deleteOrder = (id) => {
-    setOrders(orders.filter((o) => o.id !== id));
   };
 
   const getMenuItemById = (id) => {
     return menuItems.find((item) => item.id === id);
-  };
-
-  const getOrderById = (id) => {
-    return orders.find((order) => order.id === parseInt(id));
   };
 
   const getMenuCategoryById = (categoryId) => {
@@ -383,19 +342,21 @@ export const DataProvider = ({ children }) => {
       );
       return response.data.url;
     } catch (error) {
-      console.error("Error uploading image:", error.response?.data || error.message);
-      throw new Error(`Image Upload Failed: ${error.response?.data?.message || "Unknown error"}`);
+      console.error(
+        "Error uploading image:",
+        error.response?.data || error.message,
+      );
+      throw new Error(
+        `Image Upload Failed: ${error.response?.data?.message || "Unknown error"}`,
+      );
     }
   };
 
   const value = {
     occasions,
-    services,
-    categories,
     menuItems,
     loadingMenuItems,
     refreshMenuItems: fetchMenuItems,
-    orders,
 
     // Occasions
     loadingOccasions,
@@ -467,183 +428,13 @@ export const DataProvider = ({ children }) => {
       }
     },
     toggleOccasionActive: async (id) => {
-      const occasion = occasions.find((o) => o._id === id);
-      if (occasion) {
-        try {
-          const response = await axios.put(
-            `${import.meta.env.VITE_BACKEND_URL}/api/occasions/${id}`,
-            { ...occasion, active: !occasion.active },
-          );
-          setOccasions(
-            occasions.map((o) => (o._id === id ? response.data : o)),
-          );
-        } catch (error) {
-          console.error("Error toggling occasion status:", error);
-        }
-      }
-    },
-
-    // Services
-    loadingServices,
-    addService: async (service) => {
-      const tempId = `temp-${Date.now()}`;
-      const optimisticService = {
-        ...service,
-        _id: tempId,
-        createdAt: new Date(),
-      };
-
-      setServices([optimisticService, ...services]);
-
       try {
-        const imageUrl = await handleImageUpload(service.image);
-        const serviceWithUrl = { ...service, image: imageUrl };
-        const response = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/services`,
-          serviceWithUrl,
-        );
-        setServices((prev) =>
-          prev.map((s) => (s._id === tempId ? response.data : s)),
-        );
-        return response.data;
-      } catch (error) {
-        setServices((prev) => prev.filter((s) => s._id !== tempId));
-        console.error("Error adding service:", error);
-        alert("Failed to add service. Please try again.");
-      }
-    },
-    updateService: async (id, updatedData) => {
-      const originalServices = [...services];
-
-      setServices(
-        services.map((s) => (s._id === id ? { ...s, ...updatedData } : s)),
-      );
-
-      try {
-        let imageUrl = updatedData.image;
-        if (updatedData.image && updatedData.image.startsWith("data:image")) {
-          imageUrl = await handleImageUpload(updatedData.image);
-        }
-        const dataWithUrl = { ...updatedData, image: imageUrl };
         const response = await axios.put(
-          `${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`,
-          dataWithUrl,
+          `${import.meta.env.VITE_BACKEND_URL}/api/occasions/${id}/toggle-active`,
         );
-        setServices((prev) =>
-          prev.map((s) => (s._id === id ? response.data : s)),
-        );
-        return response.data;
+        setOccasions(occasions.map((o) => (o._id === id ? response.data : o)));
       } catch (error) {
-        setServices(originalServices);
-        console.error("Error updating service:", error);
-        alert("Failed to update service. Please try again.");
-      }
-    },
-    deleteService: async (id) => {
-      try {
-        await axios.delete(
-          `${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`,
-        );
-        setServices(services.filter((s) => s._id !== id));
-      } catch (error) {
-        console.error("Error deleting service:", error);
-      }
-    },
-    toggleServiceActive: async (id) => {
-      const service = services.find((s) => s._id === id);
-      if (service) {
-        try {
-          const response = await axios.put(
-            `${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`,
-            { ...service, active: !service.active },
-          );
-          setServices(services.map((s) => (s._id === id ? response.data : s)));
-        } catch (error) {
-          console.error("Error toggling service status:", error);
-        }
-      }
-    },
-
-    // Categories
-    loadingCategories,
-    addCategory: async (category) => {
-      const tempId = `temp-${Date.now()}`;
-      const optimisticCategory = {
-        ...category,
-        _id: tempId,
-        createdAt: new Date(),
-      };
-
-      setCategories([optimisticCategory, ...categories]);
-
-      try {
-        const imageUrl = await handleImageUpload(category.image);
-        const categoryWithUrl = { ...category, image: imageUrl };
-        const response = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/categories`,
-          categoryWithUrl,
-        );
-        setCategories((prev) =>
-          prev.map((c) => (c._id === tempId ? response.data : c)),
-        );
-        return response.data;
-      } catch (error) {
-        setCategories((prev) => prev.filter((c) => c._id !== tempId));
-        console.error("Error adding category:", error);
-        alert("Failed to add category. Please try again.");
-      }
-    },
-    updateCategory: async (id, updatedData) => {
-      const originalCategories = [...categories];
-
-      setCategories(
-        categories.map((c) => (c._id === id ? { ...c, ...updatedData } : c)),
-      );
-
-      try {
-        let imageUrl = updatedData.image;
-        if (updatedData.image && updatedData.image.startsWith("data:image")) {
-          imageUrl = await handleImageUpload(updatedData.image);
-        }
-        const dataWithUrl = { ...updatedData, image: imageUrl };
-        const response = await axios.put(
-          `${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}`,
-          dataWithUrl,
-        );
-        setCategories((prev) =>
-          prev.map((c) => (c._id === id ? response.data : c)),
-        );
-        return response.data;
-      } catch (error) {
-        setCategories(originalCategories);
-        console.error("Error updating category:", error);
-        alert("Failed to update category. Please try again.");
-      }
-    },
-    deleteCategory: async (id) => {
-      try {
-        await axios.delete(
-          `${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}`,
-        );
-        setCategories(categories.filter((c) => c._id !== id));
-      } catch (error) {
-        console.error("Error deleting category:", error);
-      }
-    },
-    toggleCategoryActive: async (id) => {
-      const category = categories.find((c) => c._id === id);
-      if (category) {
-        try {
-          const response = await axios.put(
-            `${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}`,
-            { ...category, active: !category.active },
-          );
-          setCategories(
-            categories.map((c) => (c._id === id ? response.data : c)),
-          );
-        } catch (error) {
-          console.error("Error toggling category status:", error);
-        }
+        console.error("Error toggling occasion status:", error);
       }
     },
 
@@ -651,8 +442,7 @@ export const DataProvider = ({ children }) => {
     addBulkMenuItems,
     updateMenuItem,
     deleteMenuItem,
-    updateMenuItem,
-    deleteMenuItem,
+
     toggleMenuItemActive,
 
     testimonials,
@@ -666,11 +456,6 @@ export const DataProvider = ({ children }) => {
     addEvent,
     updateEvent,
     deleteEvent,
-
-    addOrder,
-    updateOrder,
-    updateOrderStatus,
-    deleteOrder,
 
     blogs,
     loadingBlogs,
@@ -1092,7 +877,6 @@ export const DataProvider = ({ children }) => {
     },
 
     getMenuItemById,
-    getOrderById,
     getMenuCategoryById,
     progress,
     setProgress,
@@ -1102,7 +886,11 @@ export const DataProvider = ({ children }) => {
     loadingCategories,
     addCategory: async (category) => {
       const tempId = `temp-${Date.now()}`;
-      const optimisticCategory = { ...category, _id: tempId, createdAt: new Date() };
+      const optimisticCategory = {
+        ...category,
+        _id: tempId,
+        createdAt: new Date(),
+      };
       setCategories([optimisticCategory, ...categories]);
 
       try {
@@ -1112,7 +900,9 @@ export const DataProvider = ({ children }) => {
           `${import.meta.env.VITE_BACKEND_URL}/api/categories`,
           categoryWithUrl,
         );
-        setCategories((prev) => prev.map((c) => (c._id === tempId ? response.data : c)));
+        setCategories((prev) =>
+          prev.map((c) => (c._id === tempId ? response.data : c)),
+        );
         return response.data;
       } catch (error) {
         setCategories((prev) => prev.filter((c) => c._id !== tempId));
@@ -1122,7 +912,9 @@ export const DataProvider = ({ children }) => {
     },
     updateCategory: async (id, updatedData) => {
       const originalCategories = [...categories];
-      setCategories(categories.map((c) => (c._id === id ? { ...c, ...updatedData } : c)));
+      setCategories(
+        categories.map((c) => (c._id === id ? { ...c, ...updatedData } : c)),
+      );
 
       try {
         let imageUrl = updatedData.image;
@@ -1134,7 +926,9 @@ export const DataProvider = ({ children }) => {
           `${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}`,
           dataWithUrl,
         );
-        setCategories((prev) => prev.map((c) => (c._id === id ? response.data : c)));
+        setCategories((prev) =>
+          prev.map((c) => (c._id === id ? response.data : c)),
+        );
         return response.data;
       } catch (error) {
         setCategories(originalCategories);
@@ -1145,30 +939,33 @@ export const DataProvider = ({ children }) => {
     deleteCategory: async (id) => {
       try {
         setProgress(30);
-        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}`);
+        await axios.delete(
+          `${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}`,
+        );
         setCategories(categories.filter((c) => c._id !== id));
         setProgress(100);
       } catch (error) {
         console.error("Error deleting category:", error);
         setProgress(100);
         if (error.response?.data?.activeServices > 0) {
-          alert(`Cannot delete category with ${error.response.data.activeServices} active services`);
+          alert(
+            `Cannot delete category with ${error.response.data.activeServices} active services`,
+          );
         } else {
           alert("Failed to delete category.");
         }
       }
     },
     toggleCategoryActive: async (id) => {
-      const category = categories.find((c) => c._id === id);
-      if (category) {
-        try {
-          const response = await axios.patch(
-            `${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}/toggle-active`,
-          );
-          setCategories(categories.map((c) => (c._id === id ? response.data : c)));
-        } catch (error) {
-          console.error("Error toggling category status:", error);
-        }
+      try {
+        const response = await axios.put(
+          `${import.meta.env.VITE_BACKEND_URL}/api/categories/${id}/toggle-active`,
+        );
+        setCategories(
+          categories.map((c) => (c._id === id ? response.data : c)),
+        );
+      } catch (error) {
+        console.error("Error toggling category status:", error);
       }
     },
 
@@ -1179,18 +976,22 @@ export const DataProvider = ({ children }) => {
     serviceSelections,
     addService: async (service, initialConfig) => {
       const tempId = `temp-${Date.now()}`;
-      const optimisticService = { ...service, _id: tempId, createdAt: new Date() };
+      const optimisticService = {
+        ...service,
+        _id: tempId,
+        createdAt: new Date(),
+      };
       setServices([optimisticService, ...services]);
 
       try {
         const uploadedImages = await Promise.all(
           (service.images || []).map(async (img) => {
-            if (img.url && img.url.startsWith('data:image')) {
+            if (img.url && img.url.startsWith("data:image")) {
               const uploadedUrl = await handleImageUpload(img.url);
               return { ...img, url: uploadedUrl };
             }
             return img;
-          })
+          }),
         );
 
         const serviceWithImages = { ...service, images: uploadedImages };
@@ -1199,7 +1000,9 @@ export const DataProvider = ({ children }) => {
           serviceWithImages,
         );
 
-        setServices((prev) => prev.map((s) => (s._id === tempId ? response.data : s)));
+        setServices((prev) =>
+          prev.map((s) => (s._id === tempId ? response.data : s)),
+        );
 
         if (initialConfig) {
           await axios.put(
@@ -1217,19 +1020,21 @@ export const DataProvider = ({ children }) => {
     },
     updateService: async (id, updatedData) => {
       const originalServices = [...services];
-      setServices(services.map((s) => (s._id === id ? { ...s, ...updatedData } : s)));
+      setServices(
+        services.map((s) => (s._id === id ? { ...s, ...updatedData } : s)),
+      );
 
       try {
         let updatedImages = updatedData.images;
         if (updatedData.images) {
           updatedImages = await Promise.all(
             updatedData.images.map(async (img) => {
-              if (img.url && img.url.startsWith('data:image')) {
+              if (img.url && img.url.startsWith("data:image")) {
                 const uploadedUrl = await handleImageUpload(img.url);
                 return { ...img, url: uploadedUrl };
               }
               return img;
-            })
+            }),
           );
         }
 
@@ -1238,7 +1043,9 @@ export const DataProvider = ({ children }) => {
           `${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`,
           dataWithImages,
         );
-        setServices((prev) => prev.map((s) => (s._id === id ? response.data : s)));
+        setServices((prev) =>
+          prev.map((s) => (s._id === id ? response.data : s)),
+        );
         return response.data;
       } catch (error) {
         setServices(originalServices);
@@ -1249,7 +1056,9 @@ export const DataProvider = ({ children }) => {
     deleteService: async (id) => {
       try {
         setProgress(30);
-        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`);
+        await axios.delete(
+          `${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`,
+        );
         setServices(services.filter((s) => s._id !== id));
         setProgress(100);
       } catch (error) {
@@ -1260,7 +1069,7 @@ export const DataProvider = ({ children }) => {
     },
     toggleServiceActive: async (id) => {
       try {
-        const response = await axios.patch(
+        const response = await axios.put(
           `${import.meta.env.VITE_BACKEND_URL}/api/services/${id}/toggle-active`,
         );
         setServices(services.map((s) => (s._id === id ? response.data : s)));
@@ -1283,7 +1092,7 @@ export const DataProvider = ({ children }) => {
         const response = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/service-config/${serviceId}`,
         );
-        setServiceConfigs(prev => ({ ...prev, [serviceId]: response.data }));
+        setServiceConfigs((prev) => ({ ...prev, [serviceId]: response.data }));
         return response.data;
       } catch (error) {
         console.error("Error fetching service config:", error);
@@ -1296,7 +1105,7 @@ export const DataProvider = ({ children }) => {
           `${import.meta.env.VITE_BACKEND_URL}/api/service-config/${serviceId}`,
           config,
         );
-        setServiceConfigs(prev => ({ ...prev, [serviceId]: response.data }));
+        setServiceConfigs((prev) => ({ ...prev, [serviceId]: response.data }));
         return response.data;
       } catch (error) {
         console.error("Error updating service config:", error);
@@ -1308,7 +1117,10 @@ export const DataProvider = ({ children }) => {
         const response = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/service-selection/${serviceId}`,
         );
-        setServiceSelections(prev => ({ ...prev, [serviceId]: response.data }));
+        setServiceSelections((prev) => ({
+          ...prev,
+          [serviceId]: response.data,
+        }));
         return response.data;
       } catch (error) {
         console.error("Error fetching service selection:", error);
@@ -1321,7 +1133,10 @@ export const DataProvider = ({ children }) => {
           `${import.meta.env.VITE_BACKEND_URL}/api/service-selection/${serviceId}`,
           selection,
         );
-        setServiceSelections(prev => ({ ...prev, [serviceId]: response.data }));
+        setServiceSelections((prev) => ({
+          ...prev,
+          [serviceId]: response.data,
+        }));
         return response.data;
       } catch (error) {
         console.error("Error saving service selection:", error);
@@ -1337,7 +1152,7 @@ export const DataProvider = ({ children }) => {
         const imageUrl = await handleImageUpload(image);
         const response = await axios.post(
           `${import.meta.env.VITE_BACKEND_URL}/api/carousel`,
-          { image: imageUrl }
+          { image: imageUrl },
         );
         setCarouselImages([response.data, ...carouselImages]);
         return response.data;
@@ -1348,7 +1163,9 @@ export const DataProvider = ({ children }) => {
     },
     deleteCarouselImage: async (id) => {
       try {
-        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/carousel/${id}`);
+        await axios.delete(
+          `${import.meta.env.VITE_BACKEND_URL}/api/carousel/${id}`,
+        );
         setCarouselImages(carouselImages.filter((img) => img._id !== id));
       } catch (error) {
         console.error("Error deleting carousel image:", error);
@@ -1364,7 +1181,7 @@ export const DataProvider = ({ children }) => {
         // Direct upload, skipping Cloudinary
         const response = await axios.post(
           `${import.meta.env.VITE_BACKEND_URL}/api/banner`,
-          { image }
+          { image },
         );
         setBannerImages([response.data, ...bannerImages]);
         return response.data;
@@ -1375,7 +1192,9 @@ export const DataProvider = ({ children }) => {
     },
     deleteBannerImage: async (id) => {
       try {
-        await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/banner/${id}`);
+        await axios.delete(
+          `${import.meta.env.VITE_BACKEND_URL}/api/banner/${id}`,
+        );
         setBannerImages(bannerImages.filter((img) => img._id !== id));
       } catch (error) {
         console.error("Error deleting banner image:", error);
@@ -1386,4 +1205,3 @@ export const DataProvider = ({ children }) => {
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };
-

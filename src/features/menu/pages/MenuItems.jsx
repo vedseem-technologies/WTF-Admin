@@ -1,24 +1,25 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { Pencil, Trash2, Utensils } from "lucide-react";
 import { useData } from "../../../context/DataContext";
 import Modal from "../../../components/ui/Modal";
 import Toggle from "../../../components/ui/Toggle";
 import ImageUpload from "../../../components/ui/ImageUpload";
 import { getThumbnail } from "../../../utils/imageOptimizer";
-import "./MenuItems.css";
 import useCursorPagination from "../../../hooks/useCursorPagination";
+import { useDialog } from "../../../context/DialogContext";
 
 const MENU_CATEGORIES = [
-  { id: "Starter", name: "Starter", icon: "🥗" },
-  { id: "Main Course", name: "Main Course", icon: "🍛" },
-  { id: "Rice & Bread", name: "Rice & Bread", icon: "🍚" },
-  { id: "Dessert", name: "Dessert", icon: "🍰" },
+  { id: "Starter", name: "Starter", icon: "??" },
+  { id: "Main Course", name: "Main Course", icon: "??" },
+  { id: "Rice & Bread", name: "Rice & Bread", icon: "??" },
+  { id: "Dessert", name: "Dessert", icon: "??" },
 ];
 
 const LEGACY_CATEGORY_MAP = {
   1: "Starter",
   2: "Main Course",
   3: "Rice & Bread",
-  4: "Dessert"
+  4: "Dessert",
 };
 
 const MenuItems = ({ categoryId = null, titleOverride = null }) => {
@@ -29,6 +30,7 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
     deleteMenuItem,
     toggleMenuItemActive,
   } = useData();
+  const { confirm } = useDialog();
 
   const [searchTerm, setSearchTerm] = useState("");
   // Debounce search
@@ -55,15 +57,20 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
     pageInfo,
     handleNext,
     handlePrev,
-    refresh: refreshMenuItems
-  } = useCursorPagination('/api/menu-items', {
+    refresh: refreshMenuItems,
+  } = useCursorPagination("/api/menu-items", {
     limit: 20, // Higher limit for menu items usually
     filters: {
-      active: activeFilter === 'active' ? true : (activeFilter === 'inactive' ? false : undefined),
+      active:
+        activeFilter === "active"
+          ? true
+          : activeFilter === "inactive"
+            ? false
+            : undefined,
       search: debouncedSearchTerm || undefined,
-      category: categoryFilter !== 'all' ? categoryFilter : undefined,
-      type: typeFilter !== 'all' ? typeFilter : undefined
-    }
+      category: categoryFilter !== "all" ? categoryFilter : undefined,
+      type: typeFilter !== "all" ? typeFilter : undefined,
+    },
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -133,15 +140,23 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
       }
       refreshMenuItems();
       handleCloseModal();
-    } catch (e) { handleError(e); }
+    } catch (e) {
+      handleError(e);
+    }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this menu item?")) {
-      try {
-        await deleteMenuItem(id);
-        refreshMenuItems();
-      } catch (e) { handleError(e); }
+    const ok = await confirm("This action cannot be undone.", {
+      title: "Delete Menu Item?",
+      variant: "danger",
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+    try {
+      await deleteMenuItem(id);
+      refreshMenuItems();
+    } catch (e) {
+      handleError(e);
     }
   };
 
@@ -149,8 +164,10 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
     try {
       await toggleMenuItemActive(id);
       refreshMenuItems();
-    } catch (e) { handleError(e); }
-  }
+    } catch (e) {
+      handleError(e);
+    }
+  };
 
   const handleBulkAdd = async (e) => {
     e.preventDefault();
@@ -162,7 +179,10 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
         .map((s) => s.trim());
 
       // Validate category
-      const matchedCategory = MENU_CATEGORIES.find(c => c.name.toLowerCase() === (catName || "").toLowerCase()) || MENU_CATEGORIES[0];
+      const matchedCategory =
+        MENU_CATEGORIES.find(
+          (c) => c.name.toLowerCase() === (catName || "").toLowerCase(),
+        ) || MENU_CATEGORIES[0];
 
       return {
         name,
@@ -183,7 +203,9 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
       refreshMenuItems();
       setBulkData("");
       setIsBulkModalOpen(false);
-    } catch (e) { handleError(e); }
+    } catch (e) {
+      handleError(e);
+    }
   };
 
   const getCategoryName = (catId) => {
@@ -200,127 +222,160 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
   };
 
   return (
-    <div className="page-container">
-      <div className="page-filters">
+    <div className="p-6">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
         <input
           type="text"
-          className="form-control search-input"
-          placeholder="🔍 Search menu items..."
+          className="flex-1 min-w-[200px] px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-light transition-all"
+          placeholder="Search menu items..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <div className="filter-buttons" style={{ marginLeft: "auto" }}>
-          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-            + Add Item
-          </button>
-        </div>
+        <button
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-gradient text-white rounded-lg font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm"
+          onClick={() => handleOpenModal()}
+        >
+          + Add Item
+        </button>
       </div>
 
-      <div className="table-container">
+      <div className="bg-white rounded-xl shadow-md border border-border overflow-hidden">
         {loadingMenuItems && menuItems.length === 0 ? (
-          <div className="loading-state">
-            <h3>...loading</h3>
+          <div className="flex justify-center py-16 text-gray-400">
+            Loading...
           </div>
         ) : menuItems.length > 0 ? (
           <>
-            <table className="table menu-items-table">
-              <thead>
-                <tr>
-                  <th>Image</th>
-                  <th>Item Name</th>
-                  <th>Category</th>
-                  <th>Type</th>
-                  <th>Quantity</th>
-                  <th>Measurement</th>
-                  <th>Unit Price</th>
-                  <th>People</th>
-                  <th>Active</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {menuItems.map((item) => (
-                  <tr key={item._id}>
-                    <td>
-                      <div className="item-image">
-                        <img
-                          src={getThumbnail(item.image)}
-                          alt={item.name}
-                          loading="lazy"
-                          referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
-                        />
-                      </div>
-                    </td>
-                    <td className="font-semibold">{item.name}</td>
-                    <td>
-                      <span className="badge badge-info">
-                        {LEGACY_CATEGORY_MAP[item.category] || item.category || "-"}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`badge badge-${item.type === "Veg" ? "success" : "danger"}`}
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-bg-hover border-b-2 border-border">
+                    {[
+                      "Image",
+                      "Item Name",
+                      "Category",
+                      "Type",
+                      "Qty",
+                      "Measure",
+                      "Unit Price",
+                      "Pax",
+                      "Active",
+                      "Actions",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left text-xs font-semibold text-secondary uppercase tracking-wide"
                       >
-                        {item.type}
-                      </span>
-                    </td>
-                    <td>{item.quantity}</td>
-                    <td>{item.measurement}</td>
-                    <td>{formatCurrency(item.unitPrice)}</td>
-                    <td>{item.people}</td>
-                    <td>
-                      <Toggle
-                        checked={item.active}
-                        onChange={() => handleToggle(item._id)}
-                      />
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <button
-                          className="btn btn-sm btn-outline"
-                          onClick={() => handleOpenModal(item)}
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => handleDelete(item._id)}
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {/* Pagination Controls */}
-            <div className="pagination-controls flex justify-between items-center mt-8 mb-8">
+                </thead>
+                <tbody>
+                  {menuItems.map((item) => (
+                    <tr
+                      key={item._id}
+                      className="border-b border-gray-50 hover:bg-bg-hover transition-colors last:border-0"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100">
+                          <img
+                            src={getThumbnail(item.image)}
+                            alt={item.name}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-sm text-secondary">
+                        {item.name}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-info-light text-info rounded-full">
+                          {LEGACY_CATEGORY_MAP[item.category] ||
+                            item.category ||
+                            "-"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${item.type === "Veg" ? "bg-success-light text-success" : "bg-danger-light text-danger"}`}
+                        >
+                          {item.type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {item.quantity}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {item.measurement}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-secondary">
+                        {formatCurrency(item.unitPrice)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {item.people}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Toggle
+                          checked={item.active}
+                          onChange={() => handleToggle(item._id)}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="px-2.5 py-1 text-xs border-2 border-primary text-primary rounded-lg font-medium hover:bg-primary hover:text-white transition-all"
+                            onClick={() => handleOpenModal(item)}
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            className="px-2.5 py-1 text-xs bg-danger text-white rounded-lg font-medium hover:bg-red-700 transition-all"
+                            onClick={() => handleDelete(item._id)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
               <button
                 onClick={handlePrev}
                 disabled={!pageInfo.hasPrevPage || loadingMenuItems}
-                className="btn btn-outline"
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
-                ⬅️ Previous
+                ← Previous
               </button>
-              <span className="text-gray-500">
-                {loadingMenuItems ? 'Loading...' : ''}
+              <span className="text-sm text-gray-500">
+                {loadingMenuItems ? (
+                  <span className="animate-pulse">Loading…</span>
+                ) : (
+                  ""
+                )}
               </span>
               <button
                 onClick={handleNext}
                 disabled={!pageInfo.hasNextPage || loadingMenuItems}
-                className="btn btn-outline"
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
-                Next ➡️
+                Next →
               </button>
             </div>
           </>
         ) : (
-          <div className="empty-state">
-            <span className="empty-icon">🍕</span>
-            <h3>No menu items found</h3>
-            <p>Try adjusting your filters or add new items</p>
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <Utensils size={48} className="mb-4 text-gray-400" />
+            <h3 className="text-lg font-semibold mb-1">No menu items found</h3>
+            <p className="text-sm">
+              Try adjusting your filters or add new items
+            </p>
           </div>
         )}
       </div>
@@ -332,12 +387,14 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
         size="large"
       >
         <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Item Name *</label>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block mb-1.5 text-sm font-medium text-secondary">
+                Item Name *
+              </label>
               <input
                 type="text"
-                className="form-control"
+                className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-light transition-all"
                 placeholder="e.g., Paneer Butter Masala"
                 value={formData.name}
                 onChange={(e) =>
@@ -346,13 +403,12 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                 required
               />
             </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Category *</label>
+            <div>
+              <label className="block mb-1.5 text-sm font-medium text-secondary">
+                Category *
+              </label>
               <select
-                className="form-select"
+                className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
                 value={formData.category}
                 onChange={(e) =>
                   setFormData({ ...formData, category: e.target.value })
@@ -366,13 +422,12 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                 ))}
               </select>
             </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Type *</label>
+            <div>
+              <label className="block mb-1.5 text-sm font-medium text-secondary">
+                Type *
+              </label>
               <select
-                className="form-select"
+                className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
                 value={formData.type}
                 onChange={(e) =>
                   setFormData({ ...formData, type: e.target.value })
@@ -383,70 +438,72 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
                 <option value="Non-Veg">Non-Veg</option>
               </select>
             </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Quantity *</label>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block mb-1.5 text-sm font-medium text-secondary">
+                  Quantity *
+                </label>
+                <input
+                  type="number"
+                  className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
+                  placeholder="e.g., 100"
+                  value={formData.quantity}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      quantity:
+                        e.target.value === "" ? 0 : parseFloat(e.target.value),
+                    })
+                  }
+                  required
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <label className="block mb-1.5 text-sm font-medium text-secondary">
+                  Measurement *
+                </label>
+                <select
+                  className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
+                  value={formData.measurement}
+                  onChange={(e) =>
+                    setFormData({ ...formData, measurement: e.target.value })
+                  }
+                  required
+                >
+                  <option value="kg">kg</option>
+                  <option value="pcs">pcs</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1.5 text-sm font-medium text-secondary">
+                  Unit Price (₹) *
+                </label>
+                <input
+                  type="number"
+                  className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
+                  placeholder="e.g., 150"
+                  value={formData.unitPrice}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      unitPrice:
+                        e.target.value === "" ? 0 : parseFloat(e.target.value),
+                    })
+                  }
+                  required
+                  min="0"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block mb-1.5 text-sm font-medium text-secondary">
+                Serves (People) *
+              </label>
               <input
                 type="number"
-                className="form-control"
-                placeholder="e.g., 100"
-                value={formData.quantity}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    quantity:
-                      e.target.value === "" ? 0 : parseFloat(e.target.value),
-                  })
-                }
-                required
-                min="0"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Measurement *</label>
-              <select
-                className="form-select"
-                value={formData.measurement}
-                onChange={(e) =>
-                  setFormData({ ...formData, measurement: e.target.value })
-                }
-                required
-              >
-                <option value="kg">kg</option>
-                <option value="pcs">pcs</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Unit Price (₹) *</label>
-              <input
-                type="number"
-                className="form-control"
-                placeholder="e.g., 150"
-                value={formData.unitPrice}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    unitPrice:
-                      e.target.value === "" ? 0 : parseFloat(e.target.value),
-                  })
-                }
-                required
-                min="0"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Serves (People) *</label>
-              <input
-                type="number"
-                className="form-control"
+                className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
                 placeholder="e.g., 20"
                 value={formData.people}
                 onChange={(e) =>
@@ -461,37 +518,39 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
               />
             </div>
           </div>
-
           <ImageUpload
             label="Item Image *"
             value={formData.image}
             onChange={(image) => setFormData({ ...formData, image })}
           />
-
-          <div className="form-group">
-            <div className="toggle-field">
-              <div>
-                <label className="form-label">Active Status</label>
-                <p className="form-help">Show this item on the menu</p>
-              </div>
-              <Toggle
-                checked={formData.active}
-                onChange={(e) =>
-                  setFormData({ ...formData, active: e.target.checked })
-                }
-              />
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <label className="block text-sm font-medium text-secondary">
+                Active Status
+              </label>
+              <p className="text-xs text-gray-500">
+                Show this item on the menu
+              </p>
             </div>
+            <Toggle
+              checked={formData.active}
+              onChange={(e) =>
+                setFormData({ ...formData, active: e.target.checked })
+              }
+            />
           </div>
-
-          <div className="modal-actions">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-2">
             <button
               type="button"
-              className="btn btn-outline"
               onClick={handleCloseModal}
+              className="px-5 py-2.5 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all"
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button
+              type="submit"
+              className="px-5 py-2.5 bg-primary-gradient text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+            >
               {editingItem ? "Update Item" : "Add Item"}
             </button>
           </div>
@@ -505,41 +564,38 @@ const MenuItems = ({ categoryId = null, titleOverride = null }) => {
         size="large"
       >
         <form onSubmit={handleBulkAdd}>
-          <div className="form-group">
-            <label className="form-label">Bulk Data (CSV Format)</label>
+          <div className="mb-4">
+            <label className="block mb-1.5 text-sm font-medium text-secondary">
+              Bulk Data (CSV Format)
+            </label>
             <textarea
-              className="form-textarea"
-              style={{ minHeight: "300px" }}
-              placeholder="Enter items in CSV format (one per line):
-Name, CategoryID, Type, Quantity, Measurement, UnitPrice
-
-Example:
-Dal Makhani, 2, Veg, 200, kg, 120
-Chicken Tikka, 1, Non-Veg, 150, pcs, 180
-Jeera Rice, 3, Veg, 200, kg, 60"
+              className="w-full px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all resize-none"
+              style={{ minHeight: "250px" }}
+              placeholder={`Enter items in CSV format (one per line):\nName, CategoryID, Type, Quantity, Measurement, UnitPrice\n\nExample:\nDal Makhani, 2, Veg, 200, kg, 120`}
               value={bulkData}
               onChange={(e) => setBulkData(e.target.value)}
               required
             />
-            <p className="form-help">
+            <p className="text-xs text-gray-500 mt-1">
               Format: Name, CategoryID, Type (Veg/Non-Veg), Quantity,
               Measurement (kg/pcs), UnitPrice
             </p>
-            <p className="form-help">
-              Category Names:{" "}
-              {MENU_CATEGORIES.map((c) => c.name).join(", ")}
+            <p className="text-xs text-gray-400 mt-0.5">
+              Category Names: {MENU_CATEGORIES.map((c) => c.name).join(", ")}
             </p>
           </div>
-
-          <div className="modal-actions">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
             <button
               type="button"
-              className="btn btn-outline"
               onClick={() => setIsBulkModalOpen(false)}
+              className="px-5 py-2.5 border-2 border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-all"
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button
+              type="submit"
+              className="px-5 py-2.5 bg-primary-gradient text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+            >
               Add Items
             </button>
           </div>
