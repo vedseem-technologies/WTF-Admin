@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   ClipboardList,
   User,
@@ -23,10 +24,11 @@ const OrderDetail = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await fetch(`/api/orders/${id}`);
-        const data = await response.json();
-        if (data.success) {
-          setOrder(data.data);
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/orders/${id}`,
+        );
+        if (response.data?.success) {
+          setOrder(response.data.data);
         }
       } catch (error) {
         console.error("Failed to fetch order", error);
@@ -91,30 +93,47 @@ const OrderDetail = () => {
   };
 
   const handleStatusChange = async (newStatus) => {
-    // updateOrderStatus(order.id, newStatus); // Using context method might be stale or not support string IDs
-    // Implement direct update
     try {
-      const response = await fetch(`/api/orders/${order.orderId}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (response.ok) {
+      const response = await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/orders/${order.orderId}/status`,
+        { status: newStatus },
+      );
+      if (response.data?.success) {
         setOrder((prev) => ({ ...prev, status: newStatus }));
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error updating status:", err);
     }
   };
 
-  // Group items by category
+  const displayStatus = (status) => {
+    if (!status) return "";
+    const map = {
+      processing: "In Preparation",
+      completed: "Delivered",
+    };
+    return (
+      map[status.toLowerCase()] ||
+      status.charAt(0).toUpperCase() + status.slice(1)
+    );
+  };
+
+  // Calculate Totals dynamically to prevent NaN
+  const itemsTotal =
+    order.items?.reduce(
+      (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+      0,
+    ) || 0;
+  const subtotal =
+    order.subtotal ||
+    itemsTotal ||
+    (order.totalAmount ? order.totalAmount / 1.28 : 0);
+  const serviceCharges = order.serviceCharges || subtotal * 0.1;
+  const gst = order.gst || subtotal * 0.18;
+  const grandTotal = order.totalAmount || subtotal + serviceCharges + gst;
+
   const groupedItems = {};
   order.items.forEach((orderItem) => {
-    // Fallback: Use orderItem.name if getMenuItemById fails (menu item might be deleted)
-    // Actually, getMenuItemById relies on DataContext.
-    // If orderItem has 'name', use it directly!
-    // The backend stores snapshot of item details in `items` array properly now.
-
     const categoryName = orderItem.category || "Other";
 
     if (!groupedItems[categoryName]) {
@@ -140,12 +159,13 @@ const OrderDetail = () => {
           <span
             className={`inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full ${{ warning: "bg-warning-light text-warning", info: "bg-info-light text-info", primary: "bg-primary/10 text-primary", success: "bg-success-light text-success", danger: "bg-danger-light text-danger" }[getStatusColor(order.status)] || "bg-gray-100 text-gray-700"}`}
           >
-            {order.status}
+            {displayStatus(order.status)}
           </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Top 3 Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
         {/* Customer Information */}
         <div className="bg-white rounded-xl shadow-sm border border-border overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
@@ -194,7 +214,7 @@ const OrderDetail = () => {
             <div className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
               <span className="text-sm text-gray-500">Method</span>
               <span className="text-sm text-secondary uppercase font-bold">
-                {order.paymentMethod || "N/A"}
+                {order.chosenPaymentMethod || order.paymentMethod || "N/A"}
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
@@ -231,106 +251,124 @@ const OrderDetail = () => {
             </h3>
           </div>
           <div className="p-6">
-            <div className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-              <span className="text-sm text-gray-500">Occasion</span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                {order.occasion}
+            <div className="flex justify-between items-center py-4 border-b border-gray-50 last:border-0">
+              <span className="text-sm font-medium text-gray-500">
+                Occasion
+              </span>
+              <span className="inline-flex items-center px-3 py-1 rounded-md text-xs font-bold bg-[#E63946] text-white tracking-wide">
+                {order.entityName || (order.entityType || "N/A").toUpperCase()}
               </span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-              <span className="text-sm text-gray-500">Service Type</span>
+
+            <div className="flex justify-between items-center py-4 border-b border-gray-50 last:border-0">
+              <span className="text-sm font-medium text-gray-500">
+                Service Type
+              </span>
+              <span className="text-sm text-secondary font-medium capitalize">
+                {order.entityType === "service"
+                  ? "Live Service"
+                  : "Full Service Catering"}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-4 border-b border-gray-50 last:border-0">
+              <span className="text-sm font-medium text-gray-500">
+                Guest Count
+              </span>
+              <span className="text-sm text-secondary font-bold">
+                {(order.bookingDetails?.vegGuests || 0) +
+                  (order.bookingDetails?.nonVegGuests || 0)}{" "}
+                guests
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-4 border-b border-gray-50 last:border-0">
+              <span className="text-sm font-medium text-gray-500">
+                Event Date
+              </span>
+              <span className="text-sm text-secondary font-bold">
+                {formatDate(order.bookingDetails?.date)}{" "}
+                {order.bookingDetails?.time &&
+                  `at ${order.bookingDetails.time}`}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-4 border-b border-gray-50 last:border-0">
+              <span className="text-sm font-medium text-gray-500">
+                Order Date
+              </span>
               <span className="text-sm text-secondary font-medium">
-                {order.service}
-              </span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-              <span className="text-sm text-gray-500">Guest Count</span>
-              <span className="text-sm text-secondary font-semibold">
-                {order.guests} guests
-              </span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-              <span className="text-sm text-gray-500">Event Date</span>
-              <span className="text-sm text-secondary font-semibold">
-                {formatDate(order.eventDate)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-              <span className="text-sm text-gray-500">Order Date</span>
-              <span className="text-sm text-secondary font-medium">
-                {formatDate(order.orderDate)}
+                {formatDate(order.createdAt)}
               </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Order Status Control */}
-        <div className="bg-white rounded-xl shadow-sm border border-border overflow-hidden col-span-1 lg:col-span-2">
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-            <h3 className="font-bold text-secondary text-lg flex items-center">
-              <Settings className="text-primary mr-2" size={20} />
-              Order Status Control
-            </h3>
+      {/* Order Status Control - Full Width below the 3 cards */}
+      <div className="bg-white rounded-xl shadow-sm border border-border overflow-hidden mb-6">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <h3 className="font-bold text-secondary text-lg flex items-center">
+            <Settings className="text-primary mr-2" size={20} />
+            Order Status Control
+          </h3>
+        </div>
+        <div className="p-6">
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Update Status
+            </label>
+            <select
+              className="w-full max-w-sm px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
+              value={order.status}
+              onChange={(e) => handleStatusChange(e.target.value)}
+            >
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="processing">In Preparation</option>
+              <option value="completed">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
           </div>
-          <div className="p-6">
-            <div className="mb-8">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Update Status
-              </label>
-              <select
-                className="w-full max-w-sm px-4 py-2.5 text-sm border-2 border-border rounded-lg focus:outline-none focus:border-primary transition-all"
-                value={order.status}
-                onChange={(e) => handleStatusChange(e.target.value)}
+          <div className="flex justify-between relative before:absolute before:inset-0 before:top-4 before:-translate-y-1/2 before:h-1 before:bg-gray-100 before:z-0">
+            {[
+              {
+                label: "Pending",
+                active: [
+                  "pending",
+                  "confirmed",
+                  "processing",
+                  "completed",
+                ].includes(order.status),
+              },
+              {
+                label: "Confirmed",
+                active: ["confirmed", "processing", "completed"].includes(
+                  order.status,
+                ),
+              },
+              {
+                label: "In Preparation",
+                active: ["processing", "completed"].includes(order.status),
+              },
+              { label: "Delivered", active: order.status === "completed" },
+            ].map((step, idx) => (
+              <div
+                key={step.label}
+                className="relative z-10 flex flex-col items-center gap-2"
               >
-                <option value="Pending">Pending</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="In Preparation">In Preparation</option>
-                <option value="Delivered">Delivered</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
-            </div>
-            <div className="flex justify-between relative before:absolute before:inset-0 before:top-4 before:-translate-y-1/2 before:h-1 before:bg-gray-100 before:z-0">
-              {[
-                {
-                  label: "Pending",
-                  active: [
-                    "Pending",
-                    "Confirmed",
-                    "In Preparation",
-                    "Delivered",
-                  ].includes(order.status),
-                },
-                {
-                  label: "Confirmed",
-                  active: ["Confirmed", "In Preparation", "Delivered"].includes(
-                    order.status,
-                  ),
-                },
-                {
-                  label: "In Preparation",
-                  active: ["In Preparation", "Delivered"].includes(
-                    order.status,
-                  ),
-                },
-                { label: "Delivered", active: order.status === "Delivered" },
-              ].map((step, idx) => (
                 <div
-                  key={step.label}
-                  className="relative z-10 flex flex-col items-center gap-2"
+                  className={`w-8 h-8 rounded-full border-4 border-white shadow-sm flex items-center justify-center transition-colors ${step.active ? "bg-success text-white" : "bg-gray-200"}`}
                 >
-                  <div
-                    className={`w-8 h-8 rounded-full border-4 border-white shadow-sm flex items-center justify-center transition-colors ${step.active ? "bg-success text-white" : "bg-gray-200"}`}
-                  >
-                    {step.active && <Check size={16} />}
-                  </div>
-                  <div
-                    className={`text-xs font-semibold ${step.active ? "text-success" : "text-gray-400"}`}
-                  >
-                    {step.label}
-                  </div>
+                  {step.active && <Check size={16} />}
                 </div>
-              ))}
-            </div>
+                <div
+                  className={`text-xs font-semibold ${step.active ? "text-success" : "text-gray-400"}`}
+                >
+                  {step.label}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -357,9 +395,9 @@ const OrderDetail = () => {
                   </span>
                 </h4>
                 <ul className="space-y-2">
-                  {groupedItems[categoryName].map((item) => (
+                  {groupedItems[categoryName].map((item, idx) => (
                     <li
-                      key={item.id}
+                      key={item._id || item.itemId || `${categoryName}-${idx}`}
                       className="flex items-center justify-between text-sm"
                     >
                       <span className="text-gray-700 font-medium">
@@ -393,7 +431,7 @@ const OrderDetail = () => {
               const totalPrice = (orderItem.price || 0) * orderItem.quantity;
               return (
                 <div
-                  key={idx}
+                  key={orderItem._id || orderItem.itemId || `item-${idx}`}
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100"
                 >
                   <div>
@@ -419,38 +457,42 @@ const OrderDetail = () => {
         </div>
       </div>
 
-      {/* Total Amount */}
-      <div className="bg-white rounded-xl shadow-sm border border-border overflow-hidden lg:w-1/2 ml-auto">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+      {/* Payment Summary */}
+      <div className="bg-white rounded-2xl shadow-sm border border-border overflow-hidden mb-6 mt-4">
+        <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
           <h3 className="font-bold text-secondary text-lg flex items-center">
             <BarChart className="text-primary mr-2" size={20} />
-            Total Amount
+            Payment Summary
           </h3>
         </div>
-        <div className="p-6">
-          <div className="space-y-3">
+        <div className="p-6 bg-white">
+          <div className="space-y-4">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Subtotal</span>
-              <span className="font-semibold text-secondary">
-                {formatCurrency(order.subtotal)}
+              <span className="text-gray-500 font-medium">Subtotal</span>
+              <span className="font-bold text-secondary">
+                {formatCurrency(subtotal)}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Service Charges (10%)</span>
-              <span className="font-semibold text-secondary">
-                {formatCurrency(order.serviceCharges)}
+              <span className="text-gray-500 font-medium">
+                Service Charges (10%)
+              </span>
+              <span className="font-bold text-secondary">
+                {formatCurrency(serviceCharges)}
               </span>
             </div>
-            <div className="flex justify-between items-center text-sm pb-3 border-b border-gray-200">
-              <span className="text-gray-600">GST (18%)</span>
-              <span className="font-semibold text-secondary">
-                {formatCurrency(order.gst)}
+            <div className="flex justify-between items-center text-sm pb-5 border-b-2 border-dashed border-gray-100">
+              <span className="text-gray-500 font-medium">GST (18%)</span>
+              <span className="font-bold text-secondary">
+                {formatCurrency(gst)}
               </span>
             </div>
             <div className="flex justify-between items-center pt-2">
-              <span className="font-bold text-gray-800">Grand Total</span>
-              <span className="text-xl font-bold text-primary">
-                {formatCurrency(order.total)}
+              <span className="text-base font-bold text-gray-800 uppercase tracking-wide">
+                Grand Total
+              </span>
+              <span className="text-3xl font-black text-primary">
+                {formatCurrency(grandTotal)}
               </span>
             </div>
           </div>
