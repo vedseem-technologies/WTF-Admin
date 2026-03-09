@@ -185,7 +185,9 @@ const Orders = () => {
                         {/* Service Type */}
                         <td className="px-5 py-4">
                           <p className="text-sm font-medium text-secondary capitalize">
-                            {order.entityType || "—"}
+                            {order.entityType === "service"
+                              ? "Live Service"
+                              : "Full Service Catering"}
                           </p>
                           <p className="text-xs text-gray-400 mt-0.5">
                             {order.userId?.firstName

@@ -74,7 +74,18 @@ const OrderDetail = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-IN", {
+    const dashParts = dateString.split(/[-/]/);
+    let dateObj;
+    if (dashParts.length === 3 && dashParts[0].length <= 2) {
+      // Handle DD-MM-YYYY format from backend
+      dateObj = new Date(`${dashParts[2]}-${dashParts[1]}-${dashParts[0]}`);
+    } else {
+      dateObj = new Date(dateString);
+    }
+
+    if (isNaN(dateObj.getTime())) return dateString;
+
+    return dateObj.toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "long",
       year: "numeric",
