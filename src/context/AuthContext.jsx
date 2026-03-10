@@ -19,11 +19,30 @@ export function AuthProvider({ children }) {
       setUser(JSON.parse(storedUser));
     }
     setIsLoading(false);
+
+    // Setup global axios interceptor for 401s (token expiry)
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          setIsAuthenticated(false);
+          setUser(null);
+          localStorage.removeItem("wtf_admin_token");
+          localStorage.removeItem("wtf_admin_user");
+          window.location.href = "/login";
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
   }, []);
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, {
+      const response = await axios.post(`${API_URL}/api/auth/admin-login`, {
         email,
         password,
       });

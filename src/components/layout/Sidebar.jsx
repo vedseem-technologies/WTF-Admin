@@ -18,23 +18,25 @@ import {
   ShoppingBag,
   UtensilsCrossed,
   User,
+  Users,
 } from "lucide-react";
 
 const navItems = [
-  { path: "/", icon: <LayoutDashboard size={20} />,label: "Dashboard", end: true },
+  { path: "/", icon: <LayoutDashboard size={20} />, label: "Dashboard", end: true },
   { path: "/orders", icon: <ShoppingBag size={20} />, label: "Orders" },
   { path: "/occasions", icon: <PartyPopper size={20} />, label: "Occasions" },
   { path: "/services", icon: <ConciergeBell size={20} />, label: "Services" },
   { path: "/categories", icon: <FolderOpen size={20} />, label: "Categories" },
   { path: "/menu-items", icon: <Pizza size={20} />, label: "Menu Items" },
   { path: "/popular-items", icon: <Star size={20} />, label: "Popular Items" },
-  { path: "/range-menus", icon: <ClipboardList size={20} />,label: "Range Menus"},
+  { path: "/range-menus", icon: <ClipboardList size={20} />, label: "Range Menus" },
   { path: "/blogs", icon: <FileText size={20} />, label: "Blogs" },
   { path: "/carousel", icon: <ImageIcon size={20} />, label: "Carousel" },
-  { path: "/testimonials", icon: <MessageSquare size={20} />,label: "Testimonials"},
+  { path: "/testimonials", icon: <MessageSquare size={20} />, label: "Testimonials" },
   { path: "/youtube", icon: <Youtube size={20} />, label: "YouTube" },
   { path: "/banner", icon: <Images size={20} />, label: "Banner" },
   { path: "/events", icon: <CalendarDays size={20} />, label: "Events" },
+  { path: "/admins", icon: <Users size={20} />, label: "Admins" },
 ];
 
 const Sidebar = () => {
@@ -65,10 +67,9 @@ const Sidebar = () => {
             to={item.path}
             end={item.end}
             className={({ isActive }) =>
-              `relative flex items-center gap-4 px-8 py-3 text-sm font-medium transition-all duration-200 no-underline group ${
-                isActive
-                  ? "bg-primary/15 text-white"
-                  : "text-white/70 hover:bg-white/5 hover:text-white"
+              `relative flex items-center gap-4 px-8 py-3 text-sm font-medium transition-all duration-200 no-underline group ${isActive
+                ? "bg-primary/15 text-white"
+                : "text-white/70 hover:bg-white/5 hover:text-white"
               }`
             }
           >

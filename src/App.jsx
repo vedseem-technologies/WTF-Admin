@@ -31,6 +31,7 @@ import Orders from "./features/orders/pages/Orders";
 import OrderDetail from "./features/orders/pages/OrderDetail";
 import Testimonials from "./features/testimonials/pages/Testimonials";
 import Events from "./features/events/pages/Events";
+import Admins from "./features/admins/pages/Admins";
 import GlobalLoader from "./components/feedback/GlobalLoader";
 import ProtectedRoute from "./features/auth/components/ProtectedRoute";
 import "./index.css";
@@ -90,6 +91,7 @@ function App() {
                 <Route path="/youtube" element={<Youtube />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/orders/:id" element={<OrderDetail />} />
+                <Route path="/admins" element={<Admins />} />
               </Route>
             </Routes>
           </DataProvider>
